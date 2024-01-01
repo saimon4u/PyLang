@@ -20,7 +20,7 @@ class Lexer:
 
         tokens = []
 
-        while self.currentChar != None:
+        while self.currentChar is not None:
             if self.currentChar in ' \t':
                 self.advance()
 
@@ -28,27 +28,27 @@ class Lexer:
                 tokens.append(self.makeNumber())
 
             elif self.currentChar == '+':
-                tokens.append(Token(Constant.TT_PLUS))
+                tokens.append(Token(Constant.TT_PLUS, startPos=self.position))
                 self.advance()
 
             elif self.currentChar == '-':
-                tokens.append(Token(Constant.TT_MINUS))
+                tokens.append(Token(Constant.TT_MINUS, startPos=self.position))
                 self.advance()
 
             elif self.currentChar == '*':
-                tokens.append(Token(Constant.TT_MUL))
+                tokens.append(Token(Constant.TT_MUL, startPos=self.position))
                 self.advance()
 
             elif self.currentChar == '/':
-                tokens.append(Token(Constant.TT_DIV))
+                tokens.append(Token(Constant.TT_DIV, startPos=self.position))
                 self.advance()
 
             elif self.currentChar == '(':
-                tokens.append(Token(Constant.TT_LPAREN))
+                tokens.append(Token(Constant.TT_LPAREN, startPos=self.position))
                 self.advance()
 
             elif self.currentChar == ')':
-                tokens.append(Token(Constant.TT_RPAREN))
+                tokens.append(Token(Constant.TT_RPAREN, startPos=self.position))
                 self.advance()
 
             else:
@@ -57,11 +57,13 @@ class Lexer:
                 self.advance()
                 return [], IllegalCharError(startPos, self.position, "'" + char + "'")
 
+        tokens.append(Token(Constant.TT_EOF, startPos=self.position))
         return tokens, None
 
     def makeNumber(self):
         numStr = ''
         dotCount = 0
+        pos = self.position.copy()
 
         while self.currentChar is not None and self.currentChar in Constant.DIGITS + '.':
             if self.currentChar == '.':
@@ -75,7 +77,7 @@ class Lexer:
             self.advance()
 
         if dotCount == 0:
-            return Token(Constant.TT_INT, int(numStr))
+            return Token(Constant.TT_INT, int(numStr), startPos=pos, endPos=self.position)
         else:
-            return Token(Constant.TT_FLOAT, float(numStr))
+            return Token(Constant.TT_FLOAT, float(numStr), startPos=pos, endPos=self.position)
 

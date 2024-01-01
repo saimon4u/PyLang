@@ -1,7 +1,15 @@
 class Token:
-    def __init__(self, tokenType, value=None):
+    def __init__(self, tokenType, value=None, startPos=None, endPos=None):
         self.tokenType = tokenType
         self.value = value
+
+        if startPos:
+            self.startPos = startPos.copy()
+            self.endPos = startPos.copy()
+            self.endPos.advance()
+
+        if endPos:
+            self.endPos = endPos.copy()
 
     def __repr__(self):
         if self.value is not None:

@@ -1,4 +1,5 @@
 from Lexer import Lexer
+from Parser import Parser
 
 
 def run(filename, text):
@@ -6,4 +7,13 @@ def run(filename, text):
 
     tokens, error = lexer.makeTokens()
 
-    return tokens, error
+    # print(tokens)
+
+    if error:
+        return None, error
+
+    parser = Parser(tokens)
+
+    ast = parser.parse()
+
+    return ast.node, ast.error
