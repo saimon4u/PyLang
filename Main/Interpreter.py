@@ -56,10 +56,13 @@ class Interpreter:
         elif node.opTok.tokenType == Constant.TT_DIV:
             result, error = left.division(right)
 
+        elif node.opTok.tokenType == Constant.TT_POW:
+            result, error = left.power(right)
+
         if error:
             return res.failure(error)
 
-        return res.success(result.setPos(node.startPos, node.endPos).setCon)
+        return res.success(result.setPos(node.startPos, node.endPos))
 
     def visit_UnaryOpNode(self, node, context):
         res = RuntimeResult()

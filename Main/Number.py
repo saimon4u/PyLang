@@ -29,6 +29,10 @@ class Number:
         if isinstance(other, Number):
             return Number(self.value * other.value).setContext(self.context), None
 
+    def power(self, other):
+        if isinstance(other, Number):
+            return Number(self.value ** other.value).setContext(self.context), None
+
     def division(self, other):
         if isinstance(other, Number):
             if other.value == 0:

@@ -1,4 +1,4 @@
-from Main import Run
+import Run
 
 while True:
     text = input("PyLang -> ")

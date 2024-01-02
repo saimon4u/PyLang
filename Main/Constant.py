@@ -9,7 +9,7 @@ TT_MUL = 'MUL'
 TT_LPAREN = 'LPAREN'
 TT_RPAREN = 'RPAREN'
 TT_EOF = 'EOF'
-
+TT_POW = 'POW'
 
 class Position:
     def __init__(self, index, lineNumber, colNumber, filename, content):

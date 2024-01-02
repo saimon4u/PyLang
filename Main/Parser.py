@@ -47,18 +47,11 @@ class Parser:
 
         return res
 
-    def factor(self):
+    def atom(self):
         res = ParseResult()
         token = self.currentTok
 
-        if token.tokenType in (Constant.TT_PLUS, Constant.TT_MINUS):
-            res.register(self.advance())
-            factor = res.register(self.factor())
-            if res.error:
-                return res
-            return res.success(UnaryOpNode(token, factor))
-
-        elif token.tokenType in (Constant.TT_INT, Constant.TT_FLOAT):
+        if token.tokenType in (Constant.TT_INT, Constant.TT_FLOAT):
             res.register(self.advance())
             return res.success(NumberNode(token))
 
@@ -74,7 +67,23 @@ class Parser:
             else:
                 return res.failure(InvalidSyntaxError(self.currentTok.startPos, self.currentTok.endPos, "Expected ')'"))
 
-        return res.failure(InvalidSyntaxError(token.startPos, token.endPos, "Expected int or float"))
+        return res.failure(InvalidSyntaxError(token.startPos, token.endPos, "Expected int, float, '+', '-' or '('"))
+
+    def power(self):
+        return self.binaryOperation(self.atom, (Constant.TT_POW,), self.factor)
+
+    def factor(self):
+        res = ParseResult()
+        token = self.currentTok
+
+        if token.tokenType in (Constant.TT_PLUS, Constant.TT_MINUS):
+            res.register(self.advance())
+            factor = res.register(self.factor())
+            if res.error:
+                return res
+            return res.success(UnaryOpNode(token, factor))
+
+        return self.power()
 
     def term(self):
         return self.binaryOperation(self.factor, (Constant.TT_MUL, Constant.TT_DIV))
@@ -82,15 +91,17 @@ class Parser:
     def expression(self):
         return self.binaryOperation(self.term, (Constant.TT_MINUS, Constant.TT_PLUS))
 
-    def binaryOperation(self, func, opTokens):
+    def binaryOperation(self, funcA, opTokens, funcB=None):
+        if funcB == None:
+            funcB = funcA
         res = ParseResult()
-        left = res.register(func())
+        left = res.register(funcA())
         if res.error:
             return res
         while self.currentTok.tokenType in opTokens:
             opTok = self.currentTok
             res.register(self.advance())
-            right = res.register(func())
+            right = res.register(funcB())
             if res.error:
                 return res
 
