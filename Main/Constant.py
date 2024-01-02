@@ -1,4 +1,9 @@
+import string
+
+
 DIGITS = '0123456789'
+LETTERS = string.ascii_letters
+LETTERS_DIGITS = LETTERS + DIGITS
 
 TT_INT = 'INT'
 TT_FLOAT = 'FLOAT'
@@ -10,6 +15,14 @@ TT_LPAREN = 'LPAREN'
 TT_RPAREN = 'RPAREN'
 TT_EOF = 'EOF'
 TT_POW = 'POW'
+TT_IDENTIFIER = 'IDENTIFIER'
+TT_KEYWORD = 'KEYWORD'
+TT_EQUAL = 'EQUAL'
+
+KEYWORDS = [
+    'let'
+]
+
 
 class Position:
     def __init__(self, index, lineNumber, colNumber, filename, content):
@@ -38,3 +51,22 @@ class Context:
         self.displayName = displayName
         self.parent = parent
         self.parentEntryPos = parentEntryPos
+        self.symbolTable = None
+
+
+class SymbolTable:
+    def __init__(self):
+        self.symbols = {}
+        self.parent = None
+
+    def get(self, name):
+        value = self.symbols.get(name, None)
+        if value is None and self.parent:
+            return self.parent.get(name)
+        return value
+
+    def set(self, name, value):
+        self.symbols[name] = value
+
+    def remove(self, name):
+        del self.symbols[name]

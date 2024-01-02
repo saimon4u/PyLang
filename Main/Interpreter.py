@@ -1,5 +1,6 @@
 from Number import Number
 import Constant
+from Error import RunningTimeError
 
 
 class RuntimeResult:
@@ -78,3 +79,23 @@ class Interpreter:
         if error:
             return res.failure(error)
         return res.success(val.setPos(node.startPos, node.endPos))
+
+    def visit_VarAccessNode(self, node, context):
+        res = RuntimeResult()
+        varName = node.varNameTok.value
+        value = context.symbolTable.get(varName)
+
+        if not value:
+            return res.failure(RunningTimeError(node.startPos, node.endPos, f"'{varName}' is not defined", context))
+
+        value = value.copy().setPos(node.startPos, node.endPos)
+        return res.success(value)
+
+    def visit_VarAssignNode(self, node, context):
+        res = RuntimeResult()
+        varName = node.varNameTok.value
+        value = res.register(self.visit(node.valueNode, context))
+        if res.error:
+            return res
+        context.symbolTable.set(varName, value)
+        return res.success(value)

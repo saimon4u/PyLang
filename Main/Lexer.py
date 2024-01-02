@@ -27,6 +27,9 @@ class Lexer:
             elif self.currentChar in Constant.DIGITS:
                 tokens.append(self.makeNumber())
 
+            elif self.currentChar in Constant.LETTERS:
+                tokens.append(self.makeIdentifier())
+
             elif self.currentChar == '+':
                 tokens.append(Token(Constant.TT_PLUS, startPos=self.position))
                 self.advance()
@@ -45,6 +48,10 @@ class Lexer:
 
             elif self.currentChar == '/':
                 tokens.append(Token(Constant.TT_DIV, startPos=self.position))
+                self.advance()
+
+            elif self.currentChar == '=':
+                tokens.append(Token(Constant.TT_EQUAL, startPos=self.position))
                 self.advance()
 
             elif self.currentChar == '(':
@@ -84,4 +91,15 @@ class Lexer:
             return Token(Constant.TT_INT, int(numStr), startPos=pos, endPos=self.position)
         else:
             return Token(Constant.TT_FLOAT, float(numStr), startPos=pos, endPos=self.position)
+
+    def makeIdentifier(self):
+        identifier = ''
+        pos = self.position.copy()
+        while self.currentChar is not None and self.currentChar in Constant.LETTERS_DIGITS + '_':
+            identifier += self.currentChar
+            self.advance()
+
+        tokenType = Constant.TT_KEYWORD if identifier in Constant.KEYWORDS else Constant.TT_IDENTIFIER
+
+        return Token(tokenType, identifier, pos, self.position)
 

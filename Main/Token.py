@@ -11,6 +11,9 @@ class Token:
         if endPos:
             self.endPos = endPos.copy()
 
+    def matches(self, tokenType, value):
+        return self.tokenType == tokenType and self.value == value
+
     def __repr__(self):
         if self.value is not None:
             return f'{self.tokenType}:{self.value}'

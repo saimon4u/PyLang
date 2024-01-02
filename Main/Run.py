@@ -2,6 +2,11 @@ from Lexer import Lexer
 from Parser import Parser
 from Interpreter import Interpreter
 from Constant import Context
+from Constant import SymbolTable
+from Number import Number
+
+table = SymbolTable()
+table.set('null', Number(0))
 
 
 def run(filename, text):
@@ -22,6 +27,7 @@ def run(filename, text):
 
     interpreter = Interpreter()
     context = Context('<PyLang>')
+    context.symbolTable = table
 
     result = interpreter.visit(ast.node, context)
 

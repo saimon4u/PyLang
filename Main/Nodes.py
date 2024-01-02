@@ -1,4 +1,3 @@
-
 class NumberNode:
     def __init__(self, token):
         self.token = token
@@ -20,6 +19,7 @@ class BinaryOpNode:
     def __repr__(self):
         return f'({self.leftNode}, {self.opTok}, {self.rightNode})'
 
+
 class UnaryOpNode:
     def __init__(self, opTok, node):
         self.opTok = opTok
@@ -29,3 +29,19 @@ class UnaryOpNode:
 
     def __repr__(self):
         return f'({self.opTok}, {self.node})'
+
+
+class VarAccessNode:
+    def __init__(self, varNameTok):
+        self.varNameTok = varNameTok
+        self.startPos = varNameTok.startPos
+        self.endPos = varNameTok.endPos
+
+
+class VarAssignNode:
+    def __init__(self, varNameTok, valueNode):
+        self.varNameTok = varNameTok
+        self.valueNode = valueNode
+
+        self.startPos = self.varNameTok.startPos
+        self.endPos = self.valueNode.endPos

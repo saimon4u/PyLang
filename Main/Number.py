@@ -39,5 +39,11 @@ class Number:
                 return None, RunningTimeError(other.startPos, other.endPos, "Division by zero", self.context)
             return Number(self.value / other.value).setContext(self.context), None
 
+    def copy(self):
+        copy = Number(self.value)
+        copy.setPos(self.startPos, self.endPos)
+        copy.setContext(self.context)
+        return copy
+
     def __repr__(self):
         return str(self.value)

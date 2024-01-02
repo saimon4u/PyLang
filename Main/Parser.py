@@ -1,5 +1,5 @@
 import Constant
-from Nodes import NumberNode, BinaryOpNode, UnaryOpNode
+from Nodes import *
 from Error import InvalidSyntaxError
 
 
@@ -7,20 +7,24 @@ class ParseResult:
     def __init__(self):
         self.error = None
         self.node = None
+        self.advanceCount = 0
+
+    def registerAdvance(self):
+        self.advanceCount += 1
 
     def register(self, res):
-        if isinstance(res, ParseResult):
-            if res.error:
-                self.error = res.error
-            return res.node
-        return res
+        self.advanceCount += res.advanceCount
+        if res.error:
+            self.error = res.error
+        return res.node
 
     def success(self, node):
         self.node = node
         return self
 
     def failure(self, error):
-        self.error = error
+        if not self.error or self.advanceCount == 0:
+            self.error = error
         return self
 
 
@@ -52,22 +56,31 @@ class Parser:
         token = self.currentTok
 
         if token.tokenType in (Constant.TT_INT, Constant.TT_FLOAT):
-            res.register(self.advance())
+            res.registerAdvance()
+            self.advance()
             return res.success(NumberNode(token))
 
+        elif token.tokenType == Constant.TT_IDENTIFIER:
+            res.registerAdvance()
+            self.advance()
+            return res.success(VarAccessNode(token))
+
         elif token.tokenType == Constant.TT_LPAREN:
-            res.register(self.advance())
+            res.registerAdvance()
+            self.advance()
             expr = res.register(self.expression())
             if res.error:
                 return res
 
             if self.currentTok.tokenType == Constant.TT_RPAREN:
-                res.register(self.advance())
+                res.registerAdvance()
+                self.advance()
                 return res.success(expr)
             else:
                 return res.failure(InvalidSyntaxError(self.currentTok.startPos, self.currentTok.endPos, "Expected ')'"))
 
-        return res.failure(InvalidSyntaxError(token.startPos, token.endPos, "Expected int, float, '+', '-' or '('"))
+        return res.failure(InvalidSyntaxError(token.startPos,
+                                              token.endPos, "Expected int, identifier, float, '+', '-' or '('"))
 
     def power(self):
         return self.binaryOperation(self.atom, (Constant.TT_POW,), self.factor)
@@ -77,7 +90,8 @@ class Parser:
         token = self.currentTok
 
         if token.tokenType in (Constant.TT_PLUS, Constant.TT_MINUS):
-            res.register(self.advance())
+            res.registerAdvance()
+            self.advance()
             factor = res.register(self.factor())
             if res.error:
                 return res
@@ -89,10 +103,35 @@ class Parser:
         return self.binaryOperation(self.factor, (Constant.TT_MUL, Constant.TT_DIV))
 
     def expression(self):
-        return self.binaryOperation(self.term, (Constant.TT_MINUS, Constant.TT_PLUS))
+        res = ParseResult()
+        if self.currentTok.matches(Constant.TT_KEYWORD, 'let'):
+            res.registerAdvance()
+            self.advance()
+            if self.currentTok.tokenType != Constant.TT_IDENTIFIER:
+                return res.failure(InvalidSyntaxError(self.currentTok.startPos,
+                                                      self.currentTok.endPos, 'Expected identifier'))
+            varName = self.currentTok
+            res.registerAdvance()
+            self.advance()
+
+            if self.currentTok.tokenType != Constant.TT_EQUAL:
+                return res.failure(InvalidSyntaxError(self.currentTok.startPos, self.currentTok.endPos, "Expected '='"))
+            res.registerAdvance()
+            self.advance()
+            expr = res.register(self.expression())
+            if res.error:
+                return res
+
+            return res.success(VarAssignNode(varName, expr))
+
+        node = res.register(self.binaryOperation(self.term, (Constant.TT_MINUS, Constant.TT_PLUS)))
+        if res.error:
+            return res.failure(InvalidSyntaxError(self.currentTok.startPos, self.currentTok.endPos,
+                                                  "Expected 'let', int, float, identifier, '+', '-' or '('"))
+        return res.success(node)
 
     def binaryOperation(self, funcA, opTokens, funcB=None):
-        if funcB == None:
+        if funcB is None:
             funcB = funcA
         res = ParseResult()
         left = res.register(funcA())
@@ -100,7 +139,8 @@ class Parser:
             return res
         while self.currentTok.tokenType in opTokens:
             opTok = self.currentTok
-            res.register(self.advance())
+            res.registerAdvance()
+            self.advance()
             right = res.register(funcB())
             if res.error:
                 return res
