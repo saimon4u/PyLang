@@ -18,9 +18,19 @@ TT_POW = 'POW'
 TT_IDENTIFIER = 'IDENTIFIER'
 TT_KEYWORD = 'KEYWORD'
 TT_EQUAL = 'EQUAL'
+TT_EE = 'EE'
+TT_NE = 'NE'
+TT_LT = 'LT'
+TT_GT = 'GT'
+TT_GTE = 'GTE'
+TT_LTE = 'LTE'
+
 
 KEYWORDS = [
-    'let'
+    'let',
+    'and',
+    'or',
+    'not'
 ]
 
 

@@ -39,6 +39,41 @@ class Number:
                 return None, RunningTimeError(other.startPos, other.endPos, "Division by zero", self.context)
             return Number(self.value / other.value).setContext(self.context), None
 
+    def equal(self, other):
+        if isinstance(other, Number):
+            return Number(int(self.value == other.value)).setContext(self.context), None
+
+    def notEqual(self, other):
+        if isinstance(other, Number):
+            return Number(int(self.value != other.value)).setContext(self.context), None
+
+    def greaterThan(self, other):
+        if isinstance(other, Number):
+            return Number(int(self.value > other.value)).setContext(self.context), None
+
+    def greaterThanEqual(self, other):
+        if isinstance(other, Number):
+            return Number(int(self.value >= other.value)).setContext(self.context), None
+
+    def lesserThan(self, other):
+        if isinstance(other, Number):
+            return Number(int(self.value < other.value)).setContext(self.context), None
+
+    def lesserThanEqual(self, other):
+        if isinstance(other, Number):
+            return Number(int(self.value <= other.value)).setContext(self.context), None
+
+    def bitwiseAnd(self, other):
+        if isinstance(other, Number):
+            return Number(int(self.value and other.value)).setContext(self.context), None
+
+    def bitwiseOr(self, other):
+        if isinstance(other, Number):
+            return Number(int(self.value or other.value)).setContext(self.context), None
+
+    def notOperation(self):
+        return Number(1 if self.value == 0 else 0).setContext(self.context), None
+
     def copy(self):
         copy = Number(self.value)
         copy.setPos(self.startPos, self.endPos)

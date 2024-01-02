@@ -124,11 +124,36 @@ class Parser:
 
             return res.success(VarAssignNode(varName, expr))
 
-        node = res.register(self.binaryOperation(self.term, (Constant.TT_MINUS, Constant.TT_PLUS)))
+        node = res.register(self.binaryOperation(self.comparisonExpression,
+                                                 ((Constant.TT_KEYWORD, 'and'), (Constant.TT_KEYWORD, 'or'))))
         if res.error:
             return res.failure(InvalidSyntaxError(self.currentTok.startPos, self.currentTok.endPos,
                                                   "Expected 'let', int, float, identifier, '+', '-' or '('"))
         return res.success(node)
+
+    def comparisonExpression(self):
+        res = ParseResult()
+
+        if self.currentTok.matches(Constant.TT_KEYWORD, 'not'):
+            opTok = self.currentTok
+            res.registerAdvance()
+            self.advance()
+
+            node = res.register(self.comparisonExpression())
+            if res.error:
+                return res
+            return res.success(UnaryOpNode(opTok, node))
+
+        node = res.register(self.binaryOperation(self.arithmeticExpression,
+                                                 (Constant.TT_EE, Constant.TT_NE, Constant.TT_LTE,
+                                                  Constant.TT_LT, Constant.TT_GTE, Constant.TT_GT)))
+        if res.error:
+            return res.failure(InvalidSyntaxError(self.currentTok.startPos, self.currentTok.endPos,
+                                                  "Expected int, identifier, float, '+', '-', '(' or 'not'"))
+        return res.success(node)
+
+    def arithmeticExpression(self):
+        return self.binaryOperation(self.term, (Constant.TT_PLUS, Constant.TT_MINUS))
 
     def binaryOperation(self, funcA, opTokens, funcB=None):
         if funcB is None:
@@ -137,7 +162,7 @@ class Parser:
         left = res.register(funcA())
         if res.error:
             return res
-        while self.currentTok.tokenType in opTokens:
+        while self.currentTok.tokenType in opTokens or (self.currentTok.tokenType, self.currentTok.value) in opTokens:
             opTok = self.currentTok
             res.registerAdvance()
             self.advance()

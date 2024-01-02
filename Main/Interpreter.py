@@ -60,6 +60,30 @@ class Interpreter:
         elif node.opTok.tokenType == Constant.TT_POW:
             result, error = left.power(right)
 
+        elif node.opTok.tokenType == Constant.TT_EE:
+            result, error = left.equal(right)
+
+        elif node.opTok.tokenType == Constant.TT_NE:
+            result, error = left.notEqual(right)
+
+        elif node.opTok.tokenType == Constant.TT_GT:
+            result, error = left.greaterThan(right)
+
+        elif node.opTok.tokenType == Constant.TT_GTE:
+            result, error = left.greaterThanEqual(right)
+
+        elif node.opTok.tokenType == Constant.TT_LT:
+            result, error = left.lesserThan(right)
+
+        elif node.opTok.tokenType == Constant.TT_LTE:
+            result, error = left.lesserThanEqual(right)
+
+        elif node.opTok.matches(Constant.TT_KEYWORD, 'and'):
+            result, error = left.bitwiseAnd(right)
+
+        elif node.opTok.matches(Constant.TT_KEYWORD, 'or'):
+            result, error = left.bitwiseOr(right)
+
         if error:
             return res.failure(error)
 
@@ -75,6 +99,9 @@ class Interpreter:
 
         if node.opTok.tokenType == Constant.TT_MINUS:
             val, error = val.multiplication(Number(-1))
+
+        elif node.opTok.matches(Constant.TT_KEYWORD, 'not'):
+            val, error = val.notOperation()
 
         if error:
             return res.failure(error)

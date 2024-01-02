@@ -7,14 +7,14 @@ from Number import Number
 
 table = SymbolTable()
 table.set('null', Number(0))
+table.set('true', Number(1))
+table.set('false', Number(0))
 
 
 def run(filename, text):
     lexer = Lexer(filename, text)
 
     tokens, error = lexer.makeTokens()
-
-    # print(tokens)
 
     if error:
         return None, error

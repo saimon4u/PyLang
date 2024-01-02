@@ -1,7 +1,7 @@
 from Constant import Position
 import Constant
 from Token import Token
-from Error import IllegalCharError
+from Error import IllegalCharError, ExpectedCharError
 
 
 class Lexer:
@@ -50,10 +50,6 @@ class Lexer:
                 tokens.append(Token(Constant.TT_DIV, startPos=self.position))
                 self.advance()
 
-            elif self.currentChar == '=':
-                tokens.append(Token(Constant.TT_EQUAL, startPos=self.position))
-                self.advance()
-
             elif self.currentChar == '(':
                 tokens.append(Token(Constant.TT_LPAREN, startPos=self.position))
                 self.advance()
@@ -61,6 +57,21 @@ class Lexer:
             elif self.currentChar == ')':
                 tokens.append(Token(Constant.TT_RPAREN, startPos=self.position))
                 self.advance()
+
+            elif self.currentChar == '!':
+                tok, error = self.makeNotEquals()
+                if error:
+                    return [], error
+                tokens.append(tok)
+
+            elif self.currentChar == '=':
+                tokens.append(self.makeEquals())
+
+            elif self.currentChar == '<':
+                tokens.append(self.makeLessThan())
+
+            elif self.currentChar == '>':
+                tokens.append(self.makeGreaterThan())
 
             else:
                 startPos = self.position.copy()
@@ -78,7 +89,8 @@ class Lexer:
 
         while self.currentChar is not None and self.currentChar in Constant.DIGITS + '.':
             if self.currentChar == '.':
-                if dotCount == 1: break
+                if dotCount == 1:
+                    break
                 dotCount += 1
                 numStr += '.'
 
@@ -102,4 +114,51 @@ class Lexer:
         tokenType = Constant.TT_KEYWORD if identifier in Constant.KEYWORDS else Constant.TT_IDENTIFIER
 
         return Token(tokenType, identifier, pos, self.position)
+
+    def makeNotEquals(self):
+        pos = self.position.copy()
+        self.advance()
+
+        if self.currentChar == '=':
+            self.advance()
+            return Token(Constant.TT_NE, pos, self.position), None
+
+        self.advance()
+        return None, ExpectedCharError(pos, self.position, "'=' (after '!')")
+
+    def makeEquals(self):
+        pos = self.position.copy()
+        self.advance()
+
+        tokenType = Constant.TT_EQUAL
+
+        if self.currentChar == '=':
+            self.advance()
+            tokenType = Constant.TT_EE
+
+        return Token(tokenType, startPos=pos, endPos=self.position)
+
+    def makeGreaterThan(self):
+        pos = self.position.copy()
+        self.advance()
+
+        tokenType = Constant.TT_GT
+
+        if self.currentChar == '=':
+            self.advance()
+            tokenType = Constant.TT_GTE
+
+        return Token(tokenType, startPos=pos, endPos=self.position)
+
+    def makeLessThan(self):
+        pos = self.position.copy()
+        self.advance()
+
+        tokenType = Constant.TT_LT
+
+        if self.currentChar == '=':
+            self.advance()
+            tokenType = Constant.TT_LTE
+
+        return Token(tokenType, startPos=pos, endPos=self.position)
 
