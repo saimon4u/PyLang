@@ -1,6 +1,5 @@
 DIGITS = '0123456789'
 
-
 TT_INT = 'INT'
 TT_FLOAT = 'FLOAT'
 TT_PLUS = 'PLUS'
@@ -33,3 +32,9 @@ class Position:
     def copy(self):
         return Position(self.index, self.lineNumber, self.colNumber, self.filename, self.content)
 
+
+class Context:
+    def __init__(self, displayName, parent=None, parentEntryPos=None):
+        self.displayName = displayName
+        self.parent = parent
+        self.parentEntryPos = parentEntryPos

@@ -23,3 +23,27 @@ class IllegalCharError(Error):
 class InvalidSyntaxError(Error):
     def __init__(self, startPos, endPos, details):
         super().__init__(startPos, endPos, 'Invalid Syntax', details)
+
+
+class RunningTimeError(Error):
+    def __init__(self, startPos, endPos, details, context):
+        super().__init__(startPos, endPos, 'Runtime Error', details)
+        self.context = context
+
+    def as_string(self):
+        result = self.generateTrace()
+        result += f'{self.errorName}: {self.details}\n'
+        result += '\n' + string_with_arrows(self.startPos.content, self.startPos, self.endPos)
+        return result
+
+    def generateTrace(self):
+        result = ''
+        pos = self.startPos.copy()
+        ctx = self.context
+
+        while ctx:
+            result = f' File {pos.filename}, line {str(pos.lineNumber + 1)}, in {ctx.displayName}\n' + result
+            pos = ctx.parentEntryPos
+            ctx = ctx.parent
+
+        return 'Traceback (most recent call last): \n' + result
