@@ -76,6 +76,9 @@ class Lexer:
             elif self.currentChar == '>':
                 tokens.append(self.makeGreaterThan())
 
+            elif self.currentChar == '"':
+                tokens.append(self.makeString())
+
             else:
                 startPos = self.position.copy()
                 char = self.currentChar
@@ -176,3 +179,27 @@ class Lexer:
 
         return Token(tokenType, startPos=pos, endPos=self.position)
 
+    def makeString(self):
+        string = ''
+        pos = self.position.copy()
+        escChar = False
+        self.advance()
+
+        escapeChars = {
+            'n': '\n',
+            't': '\t'
+        }
+
+        while self.currentChar is not None and (self.currentChar != '"' or escChar):
+            if escChar:
+                string += escapeChars.get(self.currentChar, self.currentChar)
+            else:
+                if self.currentChar == '\\':
+                    escChar = True
+                else:
+                    string += self.currentChar
+            self.advance()
+            escChar = False
+
+        self.advance()
+        return Token(Constant.TT_STRING, string, pos, self.position)

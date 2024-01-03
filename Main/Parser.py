@@ -65,6 +65,11 @@ class Parser:
             self.advance()
             return res.success(VarAccessNode(token))
 
+        elif token.tokenType == Constant.TT_STRING:
+            res.registerAdvance()
+            self.advance()
+            return res.success(StringNode(token))
+
         elif token.tokenType == Constant.TT_LPAREN:
             res.registerAdvance()
             self.advance()

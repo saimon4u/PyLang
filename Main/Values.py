@@ -179,6 +179,36 @@ class Number(Value):
 
     def __repr__(self):
         return str(self.value)
+    
+    
+class String(Value):
+    def __init__(self, value):
+        super().__init__()
+        self.value = value
+
+    def addition(self, other):
+        if isinstance(other, String):
+            return String(self.value + other.value).setContext(self.context), None
+        else:
+            return None, Value.illegalOperation(self, other)
+
+    def multiplication(self, other):
+        if isinstance(other, Number):
+            return String(self.value * other.value).setContext(self.context), None
+        else:
+            return None, Value.illegalOperation(self, other)
+
+    def isTrue(self):
+        return len(self.value) > 0
+
+    def copy(self):
+        copy = String(self.value)
+        copy.setContext(self.context)
+        copy.setPos(self.startPos, self.endPos)
+        return copy
+
+    def __repr__(self):
+        return f'"{self.value}"'
 
 
 class Function(Value):

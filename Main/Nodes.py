@@ -106,3 +106,11 @@ class FunCallNode:
             self.endPos = self.nodeToCall.endPos
 
 
+class StringNode:
+    def __init__(self, token):
+        self.token = token
+        self.startPos = token.startPos
+        self.endPos = token.endPos
+
+    def __repr__(self):
+        return f'{self.token}'

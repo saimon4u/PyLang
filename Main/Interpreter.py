@@ -1,4 +1,4 @@
-from Values import Number, Function
+from Values import Number, Function, String
 import Constant
 from Error import RunningTimeError
 
@@ -231,3 +231,7 @@ class Interpreter:
             return res
 
         return res.success(returnVal)
+
+    def visit_StringNode(self, node, context):
+        res = RuntimeResult()
+        return res.success(String(node.token.value).setContext(context).setPos(node.startPos, node.endPos))
