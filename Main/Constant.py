@@ -24,6 +24,8 @@ TT_LT = 'LT'
 TT_GT = 'GT'
 TT_GTE = 'GTE'
 TT_LTE = 'LTE'
+TT_COMMA = 'COMMA'
+TT_ARROW = 'ARROW'
 
 
 KEYWORDS = [
@@ -38,7 +40,8 @@ KEYWORDS = [
     'for',
     'to',
     'step',
-    'while'
+    'while',
+    'fun'
 ]
 
 
@@ -73,9 +76,9 @@ class Context:
 
 
 class SymbolTable:
-    def __init__(self):
+    def __init__(self, parent=None):
         self.symbols = {}
-        self.parent = None
+        self.parent = parent
 
     def get(self, name):
         value = self.symbols.get(name, None)

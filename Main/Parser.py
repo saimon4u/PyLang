@@ -97,11 +97,18 @@ class Parser:
                 return res
             return res.success(while_expr)
 
-        return res.failure(InvalidSyntaxError(token.startPos,
-                                              token.endPos, "Expected int, identifier, float, '+', '-' or '('"))
+        elif token.matches(Constant.TT_KEYWORD, 'fun'):
+            funDef = res.register(self.FunDefinition())
+            if res.error:
+                return res
+            return res.success(funDef)
+
+        return res.failure(InvalidSyntaxError(token.startPos, token.endPos,
+                                              "Expected int, identifier, float, 'if', " +
+                                              "'for', 'while', 'fun', '+', '-' or '('"))
 
     def power(self):
-        return self.binaryOperation(self.atom, (Constant.TT_POW,), self.factor)
+        return self.binaryOperation(self.funCall, (Constant.TT_POW,), self.factor)
 
     def factor(self):
         res = ParseResult()
@@ -146,7 +153,8 @@ class Parser:
                                                  ((Constant.TT_KEYWORD, 'and'), (Constant.TT_KEYWORD, 'or'))))
         if res.error:
             return res.failure(InvalidSyntaxError(self.currentTok.startPos, self.currentTok.endPos,
-                                                  "Expected 'let', int, float, identifier, '+', '-' or '('"))
+                                                  "Expected 'let', int, float, 'if', 'for', 'while'," +
+                                                  " 'fun', identifier, '+', '-' or '('"))
         return res.success(node)
 
     def comparisonExpression(self):
@@ -314,6 +322,111 @@ class Parser:
             return res
 
         return res.success(WhileNode(condition, body))
+
+    def FunDefinition(self):
+        res = ParseResult()
+
+        if not self.currentTok.matches(Constant.TT_KEYWORD, 'fun'):
+            return res.failure(InvalidSyntaxError(self.currentTok.startPos, self.currentTok.endPos,
+                                                  "Expected 'fun'"))
+
+        res.registerAdvance()
+        self.advance()
+
+        if self.currentTok.tokenType == Constant.TT_IDENTIFIER:
+            varNameTok = self.currentTok
+            res.registerAdvance()
+            self.advance()
+
+            if self.currentTok.tokenType != Constant.TT_LPAREN:
+                return res.failure(InvalidSyntaxError(self.currentTok.startPos, self.currentTok.endPos,
+                                                      "Expected '('"))
+
+        else:
+            varNameTok = None
+            if self.currentTok.tokenType != Constant.TT_LPAREN:
+                return res.failure(InvalidSyntaxError(self.currentTok.startPos, self.currentTok.endPos,
+                                                      "Expected identifier, '('"))
+        res.registerAdvance()
+        self.advance()
+        argNameTokens = []
+
+        if self.currentTok.tokenType == Constant.TT_IDENTIFIER:
+            argNameTokens.append(self.currentTok)
+            res.registerAdvance()
+            self.advance()
+            while self.currentTok.tokenType == Constant.TT_COMMA:
+                res.registerAdvance()
+                self.advance()
+
+                if self.currentTok.tokenType != Constant.TT_IDENTIFIER:
+                    return res.failure(InvalidSyntaxError(self.currentTok.startPos, self.currentTok.endPos,
+                                                          "Expected identifier"))
+
+                argNameTokens.append(self.currentTok)
+                res.registerAdvance()
+                self.advance()
+
+            if self.currentTok.tokenType != Constant.TT_RPAREN:
+                return res.failure(InvalidSyntaxError(self.currentTok.startPos, self.currentTok.endPos,
+                                                      "Expected ')' or ','"))
+
+        else:
+            if self.currentTok.tokenType != Constant.TT_RPAREN:
+                return res.failure(InvalidSyntaxError(self.currentTok.startPos, self.currentTok.endPos,
+                                                      "Expected identifier or ')'"))
+
+        res.registerAdvance()
+        self.advance()
+
+        if self.currentTok.tokenType != Constant.TT_ARROW:
+            return res.failure(InvalidSyntaxError(self.currentTok.startPos, self.currentTok.endPos,
+                                                  "Expected '->' "))
+
+        res.registerAdvance()
+        self.advance()
+
+        nodeToReturn = res.register(self.expression())
+        if res.error:
+            return res
+
+        return res.success(FunDefNode(varNameTok, argNameTokens, nodeToReturn))
+
+    def funCall(self):
+        res = ParseResult()
+
+        atom = res.register(self.atom())
+        if res.error:
+            return res
+
+        if self.currentTok.tokenType == Constant.TT_LPAREN:
+            res.registerAdvance()
+            self.advance()
+
+            argNodes = []
+
+            if self.currentTok.tokenType == Constant.TT_RPAREN:
+                res.registerAdvance()
+                self.advance()
+            else:
+                argNodes.append(res.register(self.expression()))
+                if res.error:
+                    return res.failure(InvalidSyntaxError(self.currentTok.startPos, self.currentTok.endPos,
+                                                          "Expected 'let', int, float, identifier, '+', '-', '(' or ')'"))
+                while self.currentTok.tokenType == Constant.TT_COMMA:
+                    res.registerAdvance()
+                    self.advance()
+                    argNodes.append(res.register(self.expression()))
+                    if res.error:
+                        return res
+
+                if self.currentTok.tokenType != Constant.TT_RPAREN:
+                    return res.failure(InvalidSyntaxError(self.currentTok.startPos, self.currentTok.endPos,
+                                                          "Expected ',' or ')'"))
+                res.registerAdvance()
+                self.advance()
+            return res.success(FunCallNode(atom, argNodes))
+        return res.success(atom)
 
     def binaryOperation(self, funcA, opTokens, funcB=None):
         if funcB is None:

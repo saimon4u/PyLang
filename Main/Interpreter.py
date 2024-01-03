@@ -1,4 +1,4 @@
-from Number import Number
+from Values import Number, Function
 import Constant
 from Error import RunningTimeError
 
@@ -200,3 +200,34 @@ class Interpreter:
                 return res
 
         return res.success(None)
+
+    def visit_FunDefNode(self, node, context):
+        res = RuntimeResult()
+        funName = node.varNameTok.value if node.varNameTok else None
+        bodyNode = node.bodyNode
+        argNames = [argName.value for argName in node.argNameTokens]
+
+        funcValue = Function(funName, bodyNode, argNames).setContext(context).setPos(node.startPos, node.endPos)
+        if node.varNameTok:
+            context.symbolTable.set(funName, funcValue)
+        return res.success(funcValue)
+
+    def visit_FunCallNode(self, node, context):
+        res = RuntimeResult()
+        args = []
+
+        valueToCall = res.register(self.visit(node.nodeToCall, context))
+        if res.error:
+            return res
+        valueToCall = valueToCall.copy().setPos(node.startPos, node.endPos)
+
+        for argNode in node.argNodes:
+            args.append(res.register(self.visit(argNode, context)))
+            if res.error:
+                return res
+
+        returnVal = res.register(valueToCall.execute(args))
+        if res.error:
+            return res
+
+        return res.success(returnVal)

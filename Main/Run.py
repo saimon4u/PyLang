@@ -3,7 +3,7 @@ from Parser import Parser
 from Interpreter import Interpreter
 from Constant import Context
 from Constant import SymbolTable
-from Number import Number
+from Values import Number
 
 table = SymbolTable()
 table.set('null', Number(0))

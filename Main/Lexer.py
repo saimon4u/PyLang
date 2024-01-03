@@ -35,8 +35,7 @@ class Lexer:
                 self.advance()
 
             elif self.currentChar == '-':
-                tokens.append(Token(Constant.TT_MINUS, startPos=self.position))
-                self.advance()
+                tokens.append(self.makeMinusOrArrow())
 
             elif self.currentChar == '*':
                 tokens.append(Token(Constant.TT_MUL, startPos=self.position))
@@ -44,6 +43,10 @@ class Lexer:
 
             elif self.currentChar == '^':
                 tokens.append(Token(Constant.TT_POW, startPos=self.position))
+                self.advance()
+
+            elif self.currentChar == ',':
+                tokens.append(Token(Constant.TT_COMMA, startPos=self.position))
                 self.advance()
 
             elif self.currentChar == '/':
@@ -159,6 +162,17 @@ class Lexer:
         if self.currentChar == '=':
             self.advance()
             tokenType = Constant.TT_LTE
+
+        return Token(tokenType, startPos=pos, endPos=self.position)
+
+    def makeMinusOrArrow(self):
+        pos = self.position.copy()
+        self.advance()
+        tokenType = Constant.TT_MINUS
+
+        if self.currentChar == '>':
+            self.advance()
+            tokenType = Constant.TT_ARROW
 
         return Token(tokenType, startPos=pos, endPos=self.position)
 

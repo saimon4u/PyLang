@@ -77,3 +77,32 @@ class WhileNode:
         self.endPos = self.bodyNode.endPos
 
 
+class FunDefNode:
+    def __init__(self, varNameTok, argNameTokens, bodyNode):
+        self.varNameTok = varNameTok
+        self.argNameTokens = argNameTokens
+        self.bodyNode = bodyNode
+
+        if self.varNameTok:
+            self.startPos = self.varNameTok.startPos
+        elif len(self.argNameTokens) > 0:
+            self.startPos = self.argNameTokens[0].startPos
+        else:
+            self.startPos = self.bodyNode.startPos
+
+        self.endPos = self.bodyNode.endPos
+
+
+class FunCallNode:
+    def __init__(self, nodeToCall, argNodes):
+        self.nodeToCall = nodeToCall
+        self.argNodes = argNodes
+
+        self.startPos = self.nodeToCall.startPos
+
+        if len(self.argNodes) > 0:
+            self.endPos = self.argNodes[len(self.argNodes)-1].endPos
+        else:
+            self.endPos = self.nodeToCall.endPos
+
+
