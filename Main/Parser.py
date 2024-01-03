@@ -85,6 +85,18 @@ class Parser:
                 return res
             return res.success(if_expr)
 
+        elif token.matches(Constant.TT_KEYWORD, 'for'):
+            for_expr = res.register(self.forExpression())
+            if res.error:
+                return res
+            return res.success(for_expr)
+
+        elif token.matches(Constant.TT_KEYWORD, 'while'):
+            while_expr = res.register(self.whileExpression())
+            if res.error:
+                return res
+            return res.success(while_expr)
+
         return res.failure(InvalidSyntaxError(token.startPos,
                                               token.endPos, "Expected int, identifier, float, '+', '-' or '('"))
 
@@ -217,6 +229,91 @@ class Parser:
                 return res
 
         return res.success(IfNode(cases, elseCase))
+
+    def forExpression(self):
+        res = ParseResult()
+
+        if not self.currentTok.matches(Constant.TT_KEYWORD, 'for'):
+            return res.failure(InvalidSyntaxError(self.currentTok.startPos, self.currentTok.endPos,
+                                                  "Expected 'for'"))
+        res.registerAdvance()
+        self.advance()
+
+        if self.currentTok.tokenType != Constant.TT_IDENTIFIER:
+            return res.failure(InvalidSyntaxError(self.currentTok.startPos, self.currentTok.endPos,
+                                                  "Expected identifier"))
+
+        varNameTok = self.currentTok
+        res.registerAdvance()
+        self.advance()
+
+        if self.currentTok.tokenType != Constant.TT_EQUAL:
+            return res.failure(InvalidSyntaxError(self.currentTok.startPos, self.currentTok.endPos,
+                                                  "Expected '='"))
+        res.registerAdvance()
+        self.advance()
+
+        startValue = res.register(self.expression())
+        if res.error:
+            return res
+
+        if not self.currentTok.matches(Constant.TT_KEYWORD, 'to'):
+            return res.failure(InvalidSyntaxError(self.currentTok.startPos, self.currentTok.endPos,
+                                                  "Expected 'to'"))
+
+        res.registerAdvance()
+        self.advance()
+
+        endValue = res.register(self.expression())
+        if res.error:
+            return res
+
+        if self.currentTok.matches(Constant.TT_KEYWORD, 'step'):
+            res.registerAdvance()
+            self.advance()
+
+            stepValue = res.register(self.expression())
+            if res.error:
+                return res
+        else:
+            stepValue = None
+
+        if not self.currentTok.matches(Constant.TT_KEYWORD, 'then'):
+            return res.failure(InvalidSyntaxError(self.currentTok.startPos, self.currentTok.endPos,
+                                                  "Expected 'then'"))
+        res.registerAdvance()
+        self.advance()
+
+        body = res.register(self.expression())
+        if res.error:
+            return res
+
+        return res.success(ForNode(varNameTok, startValue, endValue, stepValue, body))
+
+    def whileExpression(self):
+        res = ParseResult()
+
+        if not self.currentTok.matches(Constant.TT_KEYWORD, 'while'):
+            return res.failure(InvalidSyntaxError(self.currentTok.startPos, self.currentTok.endPos,
+                                                  "Expected 'while'"))
+        res.registerAdvance()
+        self.advance()
+
+        condition = res.register(self.expression())
+        if res.error:
+            return res
+
+        if not self.currentTok.matches(Constant.TT_KEYWORD, 'then'):
+            return res.failure(InvalidSyntaxError(self.currentTok.startPos, self.currentTok.endPos,
+                                                  "Expected 'then'"))
+        res.registerAdvance()
+        self.advance()
+
+        body = res.register(self.expression())
+        if res.error:
+            return res
+
+        return res.success(WhileNode(condition, body))
 
     def binaryOperation(self, funcA, opTokens, funcB=None):
         if funcB is None:

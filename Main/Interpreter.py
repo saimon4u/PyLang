@@ -148,3 +148,55 @@ class Interpreter:
             return res.success(elseValue)
 
         return res.success(None)
+
+    def visit_ForNode(self, node, context):
+        res = RuntimeResult()
+
+        startValue = res.register(self.visit(node.startValueNode, context))
+        if res.error:
+            return res
+
+        endValue = res.register(self.visit(node.endValueNode, context))
+        if res.error:
+            return res
+
+        if node.stepValueNode is not None:
+            stepValue = res.register(self.visit(node.stepValueNode, context))
+            if res.error:
+                return res
+        else:
+            stepValue = Number(1)
+
+        i = startValue.value
+
+        if stepValue.value >= 0:
+            condition = lambda: i < endValue.value
+        else:
+            condition = lambda: i > endValue.value
+
+        while condition():
+            context.symbolTable.set(node.varNameTok.value, Number(i))
+            i += stepValue.value
+
+            res.register(self.visit(node.bodyNode, context))
+            if res.error:
+                return res
+
+        return res.success(None)
+
+    def visit_WhileNode(self, node, context):
+        res = RuntimeResult()
+
+        while True:
+            condition = res.register(self.visit(node.conditionNode, context))
+            if res.error:
+                return res
+
+            if not condition.isTrue():
+                break
+
+            res.register(self.visit(node.bodyNode, context))
+            if res.error:
+                return res
+
+        return res.success(None)

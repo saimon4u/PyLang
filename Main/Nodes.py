@@ -54,3 +54,26 @@ class IfNode:
 
         self.startPos = self.cases[0][0].startPos
         self.endPos = (self.elseCase or self.cases[len(self.cases) - 1][0]).endPos
+
+
+class ForNode:
+    def __init__(self, varNameTok, startValueNode, endValueNode, stepValueNode, bodyNode):
+        self.varNameTok = varNameTok
+        self.startValueNode = startValueNode
+        self.endValueNode = endValueNode
+        self.stepValueNode = stepValueNode
+        self.bodyNode = bodyNode
+
+        self.startPos = self.varNameTok.startPos
+        self.endPos = self.bodyNode.endPos
+
+
+class WhileNode:
+    def __init__(self, conditionNode, bodyNode):
+        self.conditionNode = conditionNode
+        self.bodyNode = bodyNode
+
+        self.startPos = self.conditionNode.startPos
+        self.endPos = self.bodyNode.endPos
+
+
