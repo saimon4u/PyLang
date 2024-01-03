@@ -210,6 +210,57 @@ class String(Value):
     def __repr__(self):
         return f'"{self.value}"'
 
+class List(Value):
+    def __init__(self, elements):
+        super().__init__()
+        self.elements = elements
+
+    def addition(self, other):
+        newList = self.copy()
+        newList.elements.append(other)
+        return newList, None
+
+    def multiplication(self, other):
+        if isinstance(other, List):
+            newList = self.copy()
+            newList.elements.extend(other.elements)
+            return newList, None
+        else:
+            return None, Value.illegalOperation(self, other)
+
+    def subtraction(self, other):
+        if isinstance(other, Number):
+            newList = self.copy()
+            try:
+                newList.elements.pop(other.value)
+                return newList, None
+            except:
+                return None, RunningTimeError(other.startPos, other.endPos,
+                                              "Element at this index could not be removed from the list because" +
+                                              "index is out of bounds", self.context)
+        else:
+            return None, Value.illegalOperation(self, other)
+
+    def division(self, other):
+        if isinstance(other, Number):
+            try:
+                return self.elements[other.value], None
+            except:
+                return None, RunningTimeError(other.startPos, other.endPos,
+                                              "Element at this index could not be retrieved from the list because" +
+                                              "index is out of bounds", self.context)
+        else:
+            return None, Value.illegalOperation(self, other)
+
+    def copy(self):
+        copy = List(self.elements[:])
+        copy.setPos(self.startPos, self.endPos)
+        copy.setContext(self.context)
+        return copy
+
+    def __repr__(self):
+        return f'[{",".join([str(x) for x in self.elements])}]'
+
 
 class Function(Value):
     def __init__(self, name, bodyNode, argNames):

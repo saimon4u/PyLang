@@ -114,3 +114,11 @@ class StringNode:
 
     def __repr__(self):
         return f'{self.token}'
+
+
+class ListNode:
+    def __init__(self, elementNodes, startPos, endPos):
+        self.elementNodes = elementNodes
+        self.startPos = startPos
+        self.endPos = endPos
+

@@ -108,9 +108,15 @@ class Parser:
                 return res
             return res.success(funDef)
 
+        elif token.tokenType == Constant.TT_LSQUARE:
+            listExpr = res.register(self.listExpression())
+            if res.error:
+                return res
+            return res.success(listExpr)
+
         return res.failure(InvalidSyntaxError(token.startPos, token.endPos,
                                               "Expected int, identifier, float, 'if', " +
-                                              "'for', 'while', 'fun', '+', '-' or '('"))
+                                              "'for', 'while', 'fun', '+', '-', '[' or '('"))
 
     def power(self):
         return self.binaryOperation(self.funCall, (Constant.TT_POW,), self.factor)
@@ -159,7 +165,7 @@ class Parser:
         if res.error:
             return res.failure(InvalidSyntaxError(self.currentTok.startPos, self.currentTok.endPos,
                                                   "Expected 'let', int, float, 'if', 'for', 'while'," +
-                                                  " 'fun', identifier, '+', '-' or '('"))
+                                                  " 'fun', identifier, '+', '-', '[' or '('"))
         return res.success(node)
 
     def comparisonExpression(self):
@@ -180,7 +186,7 @@ class Parser:
                                                   Constant.TT_LT, Constant.TT_GTE, Constant.TT_GT)))
         if res.error:
             return res.failure(InvalidSyntaxError(self.currentTok.startPos, self.currentTok.endPos,
-                                                  "Expected int, identifier, float, '+', '-', '(' or 'not'"))
+                                                  "Expected int, identifier, float, '+', '-', '(', '[' or 'not'"))
         return res.success(node)
 
     def arithmeticExpression(self):
@@ -417,7 +423,7 @@ class Parser:
                 argNodes.append(res.register(self.expression()))
                 if res.error:
                     return res.failure(InvalidSyntaxError(self.currentTok.startPos, self.currentTok.endPos,
-                                                          "Expected 'let', int, float, identifier, '+', '-', '(' or ')'"))
+                                                          "Expected 'let', int, float, identifier, '+', '-', '(', '[' or ')'"))
                 while self.currentTok.tokenType == Constant.TT_COMMA:
                     res.registerAdvance()
                     self.advance()
@@ -451,3 +457,39 @@ class Parser:
             left = BinaryOpNode(left, opTok, right)
 
         return res.success(left)
+
+    def listExpression(self):
+        res = ParseResult()
+        elementNodes = []
+        startPos = self.currentTok.startPos.copy()
+
+        if self.currentTok.tokenType != Constant.TT_LSQUARE:
+            return res.failure(InvalidSyntaxError(self.currentTok.startPos, self.currentTok.endPos,
+                                                  "Expected '[' "))
+
+        res.registerAdvance()
+        self.advance()
+
+        if self.currentTok.tokenType == Constant.TT_RSQUARE:
+            res.registerAdvance()
+            self.advance()
+        else:
+            elementNodes.append(res.register(self.expression()))
+            if res.error:
+                return res.failure(InvalidSyntaxError(self.currentTok.startPos, self.currentTok.endPos,
+                                                      "Expected 'let', int, float, identifier, '+', '-', '(', '[' or ']'"))
+            while self.currentTok.tokenType == Constant.TT_COMMA:
+                res.registerAdvance()
+                self.advance()
+                elementNodes.append(res.register(self.expression()))
+                if res.error:
+                    return res
+
+            if self.currentTok.tokenType != Constant.TT_RSQUARE:
+                return res.failure(InvalidSyntaxError(self.currentTok.startPos, self.currentTok.endPos,
+                                                      "Expected ',' or ']'"))
+            res.registerAdvance()
+            self.advance()
+        return res.success(ListNode(elementNodes, startPos, self.currentTok.endPos.copy()))
+
+

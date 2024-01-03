@@ -1,4 +1,4 @@
-from Values import Number, Function, String
+from Values import Number, Function, String, List
 import Constant
 from Error import RunningTimeError
 
@@ -151,6 +151,7 @@ class Interpreter:
 
     def visit_ForNode(self, node, context):
         res = RuntimeResult()
+        elements = []
 
         startValue = res.register(self.visit(node.startValueNode, context))
         if res.error:
@@ -178,14 +179,15 @@ class Interpreter:
             context.symbolTable.set(node.varNameTok.value, Number(i))
             i += stepValue.value
 
-            res.register(self.visit(node.bodyNode, context))
+            elements.append(res.register(self.visit(node.bodyNode, context)))
             if res.error:
                 return res
 
-        return res.success(None)
+        return res.success(List(elements).setContext(context).setPos(node.startPos, node.endPos))
 
     def visit_WhileNode(self, node, context):
         res = RuntimeResult()
+        elements = []
 
         while True:
             condition = res.register(self.visit(node.conditionNode, context))
@@ -195,11 +197,11 @@ class Interpreter:
             if not condition.isTrue():
                 break
 
-            res.register(self.visit(node.bodyNode, context))
+            elements.append(res.register(self.visit(node.bodyNode, context)))
             if res.error:
                 return res
 
-        return res.success(None)
+        return res.success(List(elements).setContext(context).setPos(node.startPos, node.endPos))
 
     def visit_FunDefNode(self, node, context):
         res = RuntimeResult()
@@ -235,3 +237,14 @@ class Interpreter:
     def visit_StringNode(self, node, context):
         res = RuntimeResult()
         return res.success(String(node.token.value).setContext(context).setPos(node.startPos, node.endPos))
+
+    def visit_ListNode(self, node, context):
+        res = RuntimeResult()
+        elements = []
+
+        for elementNode in node.elementNodes:
+            elements.append(res.register(self.visit(elementNode, context)))
+            if res.error:
+                return res
+
+        return res.success(List(elements).setContext(context).setPos(node.startPos, node.endPos))

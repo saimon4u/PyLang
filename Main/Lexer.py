@@ -61,6 +61,14 @@ class Lexer:
                 tokens.append(Token(Constant.TT_RPAREN, startPos=self.position))
                 self.advance()
 
+            elif self.currentChar == '[':
+                tokens.append(Token(Constant.TT_LSQUARE, startPos=self.position))
+                self.advance()
+
+            elif self.currentChar == ']':
+                tokens.append(Token(Constant.TT_RSQUARE, startPos=self.position))
+                self.advance()
+
             elif self.currentChar == '!':
                 tok, error = self.makeNotEquals()
                 if error:
