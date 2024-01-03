@@ -30,7 +30,11 @@ KEYWORDS = [
     'let',
     'and',
     'or',
-    'not'
+    'not',
+    'if',
+    'elif',
+    'else',
+    'then'
 ]
 
 

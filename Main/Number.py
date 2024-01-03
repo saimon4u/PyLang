@@ -74,6 +74,9 @@ class Number:
     def notOperation(self):
         return Number(1 if self.value == 0 else 0).setContext(self.context), None
 
+    def isTrue(self):
+        return self.value != 0
+
     def copy(self):
         copy = Number(self.value)
         copy.setPos(self.startPos, self.endPos)

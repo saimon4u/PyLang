@@ -126,3 +126,25 @@ class Interpreter:
             return res
         context.symbolTable.set(varName, value)
         return res.success(value)
+
+    def visit_IfNode(self, node, context):
+        res = RuntimeResult()
+
+        for condition, expr in node.cases:
+            conditionValue = res.register(self.visit(condition, context))
+            if res.error:
+                return res
+
+            if conditionValue.isTrue():
+                exprValue = res.register(self.visit(expr, context))
+                if res.error:
+                    return res
+                return res.success(exprValue)
+
+        if node.elseCase:
+            elseValue = res.register(self.visit(node.elseCase, context))
+            if res.error:
+                return res
+            return res.success(elseValue)
+
+        return res.success(None)

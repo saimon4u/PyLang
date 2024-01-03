@@ -79,6 +79,12 @@ class Parser:
             else:
                 return res.failure(InvalidSyntaxError(self.currentTok.startPos, self.currentTok.endPos, "Expected ')'"))
 
+        elif token.matches(Constant.TT_KEYWORD, 'if'):
+            if_expr = res.register(self.ifExpression())
+            if res.error:
+                return res
+            return res.success(if_expr)
+
         return res.failure(InvalidSyntaxError(token.startPos,
                                               token.endPos, "Expected int, identifier, float, '+', '-' or '('"))
 
@@ -154,6 +160,63 @@ class Parser:
 
     def arithmeticExpression(self):
         return self.binaryOperation(self.term, (Constant.TT_PLUS, Constant.TT_MINUS))
+
+    def ifExpression(self):
+        res = ParseResult()
+        cases = []
+        elseCase = None
+
+        if not self.currentTok.matches(Constant.TT_KEYWORD, 'if'):
+            return res.failure(InvalidSyntaxError(self.currentTok.startPos, self.currentTok.endPos,
+                                                  "Expected 'if'"))
+
+        res.registerAdvance()
+        self.advance()
+
+        condition = res.register(self.expression())
+        if res.error:
+            return res
+
+        if not self.currentTok.matches(Constant.TT_KEYWORD, 'then'):
+            return res.failure(InvalidSyntaxError(self.currentTok.startPos, self.currentTok.endPos,
+                                                  "Expected 'then'"))
+
+        res.registerAdvance()
+        self.advance()
+
+        expr = res.register(self.expression())
+        if res.error:
+            return res
+        cases.append((condition, expr))
+
+        while self.currentTok.matches(Constant.TT_KEYWORD, 'elif'):
+            res.registerAdvance()
+            self.advance()
+
+            condition = res.register(self.expression())
+            if res.error:
+                return res
+
+            if not self.currentTok.matches(Constant.TT_KEYWORD, 'then'):
+                return res.failure(InvalidSyntaxError(self.currentTok.startPos, self.currentTok.endPos,
+                                                      "Expected 'then'"))
+
+            res.registerAdvance()
+            self.advance()
+
+            expr = res.register(self.expression())
+            if res.error:
+                return res
+            cases.append((condition, expr))
+
+        if self.currentTok.matches(Constant.TT_KEYWORD, 'else'):
+            res.registerAdvance()
+            self.advance()
+            elseCase = res.register(self.expression())
+            if res.error:
+                return res
+
+        return res.success(IfNode(cases, elseCase))
 
     def binaryOperation(self, funcA, opTokens, funcB=None):
         if funcB is None:
