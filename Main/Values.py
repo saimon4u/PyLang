@@ -1,7 +1,7 @@
-# from Interpreter import *
 from Constant import Context, SymbolTable
 import Interpreter
 from Error import RunningTimeError
+
 
 class Value:
     def __init__(self):
@@ -179,8 +179,8 @@ class Number(Value):
 
     def __repr__(self):
         return str(self.value)
-    
-    
+
+
 class String(Value):
     def __init__(self, value):
         super().__init__()
@@ -207,8 +207,12 @@ class String(Value):
         copy.setPos(self.startPos, self.endPos)
         return copy
 
+    def __str__(self):
+        return self.value
+
     def __repr__(self):
         return f'"{self.value}"'
+
 
 class List(Value):
     def __init__(self, elements):
@@ -253,19 +257,65 @@ class List(Value):
             return None, Value.illegalOperation(self, other)
 
     def copy(self):
-        copy = List(self.elements[:])
+        copy = List(self.elements)
         copy.setPos(self.startPos, self.endPos)
         copy.setContext(self.context)
         return copy
+
+    def __str__(self):
+        return ",".join([str(x) for x in self.elements])
 
     def __repr__(self):
         return f'[{",".join([str(x) for x in self.elements])}]'
 
 
-class Function(Value):
-    def __init__(self, name, bodyNode, argNames):
+class BaseFunction(Value):
+    def __init__(self, name):
         super().__init__()
         self.name = name or "<anonymous>"
+
+    def generateNewContext(self):
+        newContext = Context(self.name, self.context, self.startPos)
+        newContext.symbolTable = SymbolTable(newContext.parent.symbolTable)
+        return newContext
+
+    def checkArgs(self, argNames, args):
+        res = Interpreter.RuntimeResult()
+
+        if len(args) > len(argNames):
+            return res.failure(RunningTimeError(self.startPos, self.endPos,
+                                                f"{len(args) - len(argNames)} too many args passed into '{self.name}'",
+                                                self.context))
+
+        if len(args) < len(argNames):
+            return res.failure(RunningTimeError(self.startPos, self.endPos,
+                                                f"{len(argNames) - len(args)} too few args passed into '{self.name}'",
+                                                self.context))
+        return res.success(None)
+
+    def populateArgs(self, argNames, args, context):
+        res = Interpreter.RuntimeResult()
+        for i in range(len(args)):
+            argName = argNames[i]
+            argValue = args[i]
+            argValue.setContext(context)
+            context.symbolTable.set(argName, argValue)
+        return res.success(None)
+
+    def checkAndPopulateArgs(self, argNames, args, context):
+        res = Interpreter.RuntimeResult()
+        res.register(self.checkArgs(argNames, args))
+        if res.error:
+            return res
+        res.register(self.populateArgs(argNames, args, context))
+        if res.error:
+            return res
+        return res.success(None)
+
+
+class Function(BaseFunction):
+    def __init__(self, name, bodyNode, argNames):
+        super().__init__(name)
         self.bodyNode = bodyNode
         self.argNames = argNames
 
@@ -273,24 +323,11 @@ class Function(Value):
         res = Interpreter.RuntimeResult()
         interpreter = Interpreter.Interpreter()
 
-        newContext = Context(self.name, self.context, self.startPos)
-        newContext.symbolTable = SymbolTable(newContext.parent.symbolTable)
+        newContext = self.generateNewContext()
 
-        if len(args) > len(self.argNames):
-            return res.failure(RunningTimeError(self.startPos, self.endPos,
-                                                f"{len(args) - len(self.argNames)} too many args passed into '{self.name}'",
-                                                self.context))
-
-        if len(args) < len(self.argNames):
-            return res.failure(RunningTimeError(self.startPos, self.endPos,
-                                                f"{len(self.argNames) - len(args)} too few args passed into '{self.name}'",
-                                                self.context))
-
-        for i in range(len(args)):
-            argName = self.argNames[i]
-            argValue = args[i]
-            argValue.setContext(newContext)
-            newContext.symbolTable.set(argName, argValue)
+        res.register(self.checkAndPopulateArgs(self.argNames, args, newContext))
+        if res.error:
+            return res
 
         value = res.register(interpreter.visit(self.bodyNode, newContext))
         if res.error:
@@ -306,3 +343,140 @@ class Function(Value):
 
     def __repr__(self):
         return f"<function {self.name}>"
+
+
+class BuiltInFunction(BaseFunction):
+    def __init__(self, name):
+        super().__init__(name)
+
+    def execute(self, args):
+        res = Interpreter.RuntimeResult()
+
+        context = self.generateNewContext()
+
+        methodName = f'execute_{self.name}'
+        method = getattr(self, methodName, self.noExecuteMethod)
+
+        res.register(self.checkAndPopulateArgs(method.argNames, args, context))
+        if res.error:
+            return res
+
+        returnValue = res.register(method(context))
+        if res.error:
+            return res
+
+        return res.success(returnValue)
+
+    def execute_print(self, context):
+        res = Interpreter.RuntimeResult()
+        print(str(context.symbolTable.get('value')))
+        return res.success(Number(0))
+    execute_print.argNames = ['value']
+
+    def execute_input(self, context):
+        res = Interpreter.RuntimeResult()
+        text = input()
+        return res.success(String(text))
+    execute_input.argNames = []
+
+    def execute_inputInt(self, context):
+        res = Interpreter.RuntimeResult()
+        text = ''
+        while True:
+            text = input()
+            try:
+                number = int(text)
+                break
+            except ValueError:
+                print(f"'{text}' must be an integer. Try again!")
+
+        return res.success(Number(number))
+    execute_inputInt.argNames = []
+
+    def execute_isNumber(self, context):
+        res = Interpreter.RuntimeResult()
+        isNumber = isinstance(context.symbolTable.get('value'), Number)
+        return res.success(Number(1) if isNumber else Number(0))
+    execute_isNumber.argNames = ['value']
+
+    def execute_isString(self, context):
+        res = Interpreter.RuntimeResult()
+        isNumber = isinstance(context.symbolTable.get('value'), String)
+        return res.success(Number(1) if isNumber else Number(0))
+    execute_isString.argNames = ['value']
+
+    def execute_isList(self, context):
+        res = Interpreter.RuntimeResult()
+        isNumber = isinstance(context.symbolTable.get('value'), List)
+        return res.success(Number(1) if isNumber else Number(0))
+    execute_isList.argNames = ['value']
+
+    def execute_isFunction(self, context):
+        res = Interpreter.RuntimeResult()
+        isNumber = isinstance(context.symbolTable.get('value'), BaseFunction)
+        return res.success(Number(1) if isNumber else Number(0))
+    execute_isFunction.argNames = ['value']
+
+    def execute_push(self, context):
+        res = Interpreter.RuntimeResult()
+        mList = context.symbolTable.get('list')
+        value = context.symbolTable.get('value')
+
+        if not isinstance(mList, List):
+            return res.failure(RunningTimeError(self.startPos, self.endPos,
+                                                "First argument must be a List", context))
+
+        mList.elements.append(value)
+        return res.success(Number(0))
+    execute_push.argNames = ['list', 'value']
+
+    def execute_pop(self, context):
+        res = Interpreter.RuntimeResult()
+        mList = context.symbolTable.get('list')
+        index = context.symbolTable.get('index')
+
+        if not isinstance(mList, List):
+            return res.failure(RunningTimeError(self.startPos, self.endPos,
+                                                "First argument must be a List", context))
+
+        if not isinstance(index, Number):
+            return res.failure(RunningTimeError(self.startPos, self.endPos,
+                                                "Second argument must be a Number", context))
+
+        try:
+            element = mList.elements.pop(index.value)
+        except:
+            return res.failure(RunningTimeError(self.startPos, self.endPos,
+                                                "Element at this index could not be removed" +
+                                                " from the list because index is out of bounds.", context))
+        return res.success(element)
+    execute_pop.argNames = ['list', 'index']
+
+    def execute_extend(self, context):
+        res = Interpreter.RuntimeResult()
+        listA = context.symbolTable.get('listA')
+        listB = context.symbolTable.get('listB')
+
+        if not isinstance(listA, List):
+            return res.failure(RunningTimeError(self.startPos, self.endPos,
+                                                "First argument must be a List", context))
+
+        if not isinstance(listB, List):
+            return res.failure(RunningTimeError(self.startPos, self.endPos,
+                                                "Second argument must be a List", context))
+
+        listA.elements.extend(listB.elements)
+        return res.success(Number(0))
+    execute_extend.argNames = ['listA', 'listB']
+
+    def noExecuteMethod(self, context):
+        raise Exception("No execute method found!")
+
+    def copy(self):
+        copy = BuiltInFunction(self.name)
+        copy.setContext(self.context)
+        copy.setPos(self.startPos, self.endPos)
+        return copy
+
+    def __repr__(self):
+        return f"<built-in function {self.name}>"

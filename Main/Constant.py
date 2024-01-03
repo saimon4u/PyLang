@@ -47,6 +47,19 @@ KEYWORDS = [
     'fun'
 ]
 
+BUILTINFUNCTION = [
+    'print',
+    'input',
+    'inputInt',
+    'isNumber',
+    'isString',
+    'isFunction',
+    'isList',
+    'push',
+    'pop',
+    'extend',
+]
+
 
 class Position:
     def __init__(self, index, lineNumber, colNumber, filename, content):

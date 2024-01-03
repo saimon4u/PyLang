@@ -154,6 +154,9 @@ class Parser:
                 return res.failure(InvalidSyntaxError(self.currentTok.startPos, self.currentTok.endPos, "Expected '='"))
             res.registerAdvance()
             self.advance()
+            if self.currentTok.value in Constant.BUILTINFUNCTION and self.tokIdx == len(self.tokens) - 2:
+                return res.failure(InvalidSyntaxError(self.currentTok.startPos, self.currentTok.endPos,
+                                                      "You can't use built in function as variable assignment."))
             expr = res.register(self.expression())
             if res.error:
                 return res

@@ -115,7 +115,7 @@ class Interpreter:
         if not value:
             return res.failure(RunningTimeError(node.startPos, node.endPos, f"'{varName}' is not defined", context))
 
-        value = value.copy().setPos(node.startPos, node.endPos)
+        value = value.copy().setPos(node.startPos, node.endPos).setContext(context)
         return res.success(value)
 
     def visit_VarAssignNode(self, node, context):
@@ -231,6 +231,8 @@ class Interpreter:
         returnVal = res.register(valueToCall.execute(args))
         if res.error:
             return res
+
+        returnVal = returnVal.copy().setContext(context).setPos(node.startPos, node.endPos)
 
         return res.success(returnVal)
 
