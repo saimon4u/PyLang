@@ -25,6 +25,7 @@ BuiltInFunction.extend = BuiltInFunction('extend')
 BuiltInFunction.len = BuiltInFunction('len')
 BuiltInFunction.run = BuiltInFunction('run')
 BuiltInFunction.int = BuiltInFunction('int')
+BuiltInFunction.str = BuiltInFunction('str')
 
 
 table = SymbolTable()
@@ -45,6 +46,7 @@ table.set('extend', BuiltInFunction.extend)
 table.set('len', BuiltInFunction.len)
 table.set('run', BuiltInFunction.run)
 table.set('int', BuiltInFunction.int)
+table.set('str', BuiltInFunction.str)
 
 
 def run(filename, text):

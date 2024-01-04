@@ -498,6 +498,13 @@ class BuiltInFunction(BaseFunction):
         return res.success(Number(int(val.value)))
     execute_int.argNames = ['value']
 
+    def execute_str(self, context):
+        res = Interpreter.RuntimeResult()
+        val = context.symbolTable.get('value')
+
+        return res.success(String(str(val.value)))
+    execute_str.argNames = ['value']
+
     def execute_run(self, context):
         res = Interpreter.RuntimeResult()
         filename = context.symbolTable.get('fn')

@@ -15,14 +15,15 @@ fun search(list, first, last, target)
 end
 
 
-let a = [1,2,2,3]
+let list = [1,2,3,4,5,6,7]
 
-let v = 1
+let value = 12
 
-let val = search(a, 0, len(a)-1, v)
+let index = search(list, 0, len(list)-1, value)
 
-if val == -1 then
-    print("5 not found")
+
+if index != -1 then
+    print(str(value) + " found in index " + str(index))
 else
-    print("5 found")
+    print(str(value) + " is not found in the list")
 end
