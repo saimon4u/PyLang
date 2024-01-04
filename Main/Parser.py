@@ -77,7 +77,7 @@ class Parser:
             res.registerAdvance()
             self.advance()
 
-        statement = res.register(self.expression())
+        statement = res.register(self.statement())
         if res.error:
             return res
         statements.append(statement)
@@ -93,7 +93,7 @@ class Parser:
                 moreStatements = False
             if not moreStatements:
                 break
-            statement = res.tryRegister(self.expression())
+            statement = res.tryRegister(self.statement())
             if not statement:
                 self.reverse(res.toReverseCount)
                 moreStatements = False
@@ -101,6 +101,36 @@ class Parser:
             statements.append(statement)
 
         return res.success(ListNode(statements, pos, self.currentTok.endPos.copy()))
+
+    def statement(self):
+        res = ParseResult()
+        pos = self.currentTok.startPos.copy()
+
+        if self.currentTok.matches(Constant.TT_KEYWORD, 'return'):
+            res.registerAdvance()
+            self.advance()
+
+            expr = res.tryRegister(self.expression())
+            if not expr:
+                self.reverse(res.toReverseCount)
+            return res.success(ReturnNode(expr, pos, self.currentTok.endPos.copy()))
+
+        if self.currentTok.matches(Constant.TT_KEYWORD, 'continue'):
+            res.registerAdvance()
+            self.advance()
+            return res.success(ContinueNode(pos, self.currentTok.endPos.copy()))
+
+        if self.currentTok.matches(Constant.TT_KEYWORD, 'break'):
+            res.registerAdvance()
+            self.advance()
+            return res.success(BreakNode(pos, self.currentTok.endPos.copy()))
+
+        expr = res.register(self.expression())
+        if res.error:
+            return res.failure(InvalidSyntaxError(self.currentTok.startPos, self.currentTok.endPos,
+                                                  "Expected 'let', int, float, 'if', 'for', 'while'," +
+                                                  " 'fun', 'return', 'break', 'continue', identifier, '+', '-', '[' or '('"))
+        return res.success(expr)
 
     def atom(self):
         res = ParseResult()
@@ -283,7 +313,7 @@ class Parser:
                                                           "Expected 'end'"))
 
             else:
-                expr = res.register(self.expression())
+                expr = res.register(self.statement())
                 if res.error:
                     return res
                 elseCase = (expr, False)
@@ -347,7 +377,7 @@ class Parser:
                 newCases, elseCase = allCases
                 cases.extend(newCases)
         else:
-            expr = res.register(self.expression())
+            expr = res.register(self.statement())
             if res.error:
                 return res
 
@@ -544,7 +574,7 @@ class Parser:
             if res.error:
                 return res
 
-            return res.success(FunDefNode(varNameTok, argNameTokens, nodeToReturn, False))
+            return res.success(FunDefNode(varNameTok, argNameTokens, nodeToReturn, True))
 
         if self.currentTok.tokenType != Constant.TT_NEWLINE:
             return res.failure(InvalidSyntaxError(self.currentTok.startPos, self.currentTok.endPos,
@@ -564,7 +594,7 @@ class Parser:
         res.registerAdvance()
         self.advance()
 
-        return res.success(FunDefNode(varNameTok, argNameTokens, body, True))
+        return res.success(FunDefNode(varNameTok, argNameTokens, body, False))
 
     def funCall(self):
         res = ParseResult()

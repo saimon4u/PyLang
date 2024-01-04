@@ -80,11 +80,11 @@ class WhileNode:
 
 
 class FunDefNode:
-    def __init__(self, varNameTok, argNameTokens, bodyNode, shouldReturnNull):
+    def __init__(self, varNameTok, argNameTokens, bodyNode, shouldAutoReturn):
         self.varNameTok = varNameTok
         self.argNameTokens = argNameTokens
         self.bodyNode = bodyNode
-        self.shouldReturnNull = shouldReturnNull
+        self.shouldAutoReturn = shouldAutoReturn
 
         if self.varNameTok:
             self.startPos = self.varNameTok.startPos
@@ -125,3 +125,20 @@ class ListNode:
         self.startPos = startPos
         self.endPos = endPos
 
+
+class ReturnNode:
+    def __init__(self, nodeToReturn, startPos, endPos):
+        self.nodeToReturn = nodeToReturn
+        self.startPos = startPos
+        self.endPos = endPos
+
+
+class ContinueNode:
+    def __init__(self, startPos, endPos):
+        self.startPos = startPos
+        self.endPos = endPos
+
+class BreakNode:
+    def __init__(self, startPos, endPos):
+        self.startPos = startPos
+        self.endPos = endPos

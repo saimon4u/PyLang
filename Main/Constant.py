@@ -46,7 +46,10 @@ KEYWORDS = [
     'step',
     'while',
     'fun',
-    'end'
+    'end',
+    'return',
+    'break',
+    'continue',
 ]
 
 BUILTINFUNCTION = [

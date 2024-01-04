@@ -305,20 +305,20 @@ class BaseFunction(Value):
     def checkAndPopulateArgs(self, argNames, args, context):
         res = Interpreter.RuntimeResult()
         res.register(self.checkArgs(argNames, args))
-        if res.error:
+        if res.shouldReturn():
             return res
         res.register(self.populateArgs(argNames, args, context))
-        if res.error:
+        if res.shouldReturn():
             return res
         return res.success(None)
 
 
 class Function(BaseFunction):
-    def __init__(self, name, bodyNode, argNames, shouldReturnNull):
+    def __init__(self, name, bodyNode, argNames, shouldAutoReturn):
         super().__init__(name)
         self.bodyNode = bodyNode
         self.argNames = argNames
-        self.shouldReturnNull = shouldReturnNull
+        self.shouldAutoReturn = shouldAutoReturn
 
     def execute(self, args):
         res = Interpreter.RuntimeResult()
@@ -327,17 +327,18 @@ class Function(BaseFunction):
         newContext = self.generateNewContext()
 
         res.register(self.checkAndPopulateArgs(self.argNames, args, newContext))
-        if res.error:
+        if res.shouldReturn():
             return res
 
         value = res.register(interpreter.visit(self.bodyNode, newContext))
-        if res.error:
+        if res.shouldReturn() and res.funReturnValue is None:
             return res
 
-        return res.success(Number(0) if self.shouldReturnNull else value)
+        returnVal = (value if self.shouldAutoReturn else None) or res.funReturnValue or Number(0)
+        return res.success(returnVal)
 
     def copy(self):
-        copy = Function(self.name, self.bodyNode, self.argNames, self.shouldReturnNull)
+        copy = Function(self.name, self.bodyNode, self.argNames, self.shouldAutoReturn)
         copy.setContext(self.context)
         copy.setPos(self.startPos, self.endPos)
         return copy
@@ -359,11 +360,11 @@ class BuiltInFunction(BaseFunction):
         method = getattr(self, methodName, self.noExecuteMethod)
 
         res.register(self.checkAndPopulateArgs(method.argNames, args, context))
-        if res.error:
+        if res.shouldReturn():
             return res
 
         returnValue = res.register(method(context))
-        if res.error:
+        if res.shouldReturn():
             return res
 
         return res.success(returnValue)
