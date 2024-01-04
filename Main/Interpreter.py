@@ -130,7 +130,7 @@ class Interpreter:
     def visit_IfNode(self, node, context):
         res = RuntimeResult()
 
-        for condition, expr in node.cases:
+        for condition, expr, shouldReturnNull in node.cases:
             conditionValue = res.register(self.visit(condition, context))
             if res.error:
                 return res
@@ -139,15 +139,16 @@ class Interpreter:
                 exprValue = res.register(self.visit(expr, context))
                 if res.error:
                     return res
-                return res.success(exprValue)
+                return res.success(Number(0) if shouldReturnNull else exprValue)
 
         if node.elseCase:
-            elseValue = res.register(self.visit(node.elseCase, context))
+            expr, shouldReturnNull = node.elseCase
+            elseValue = res.register(self.visit(expr, context))
             if res.error:
                 return res
-            return res.success(elseValue)
+            return res.success(Number(0) if shouldReturnNull else elseValue)
 
-        return res.success(None)
+        return res.success(Number(0))
 
     def visit_ForNode(self, node, context):
         res = RuntimeResult()
@@ -183,7 +184,7 @@ class Interpreter:
             if res.error:
                 return res
 
-        return res.success(List(elements).setContext(context).setPos(node.startPos, node.endPos))
+        return res.success(Number(0) if node.shouldReturnNull else List(elements).setContext(context).setPos(node.startPos, node.endPos))
 
     def visit_WhileNode(self, node, context):
         res = RuntimeResult()
@@ -201,7 +202,7 @@ class Interpreter:
             if res.error:
                 return res
 
-        return res.success(List(elements).setContext(context).setPos(node.startPos, node.endPos))
+        return res.success(Number(0) if node.shouldReturnNull else List(elements).setContext(context).setPos(node.startPos, node.endPos))
 
     def visit_FunDefNode(self, node, context):
         res = RuntimeResult()
@@ -209,7 +210,7 @@ class Interpreter:
         bodyNode = node.bodyNode
         argNames = [argName.value for argName in node.argNameTokens]
 
-        funcValue = Function(funName, bodyNode, argNames).setContext(context).setPos(node.startPos, node.endPos)
+        funcValue = Function(funName, bodyNode, argNames, node.shouldReturnNull).setContext(context).setPos(node.startPos, node.endPos)
         if node.varNameTok:
             context.symbolTable.set(funName, funcValue)
         return res.success(funcValue)

@@ -53,35 +53,38 @@ class IfNode:
         self.elseCase = elseCase
 
         self.startPos = self.cases[0][0].startPos
-        self.endPos = (self.elseCase or self.cases[len(self.cases) - 1][0]).endPos
+        self.endPos = (self.elseCase or self.cases[len(self.cases) - 1])[0].endPos
 
 
 class ForNode:
-    def __init__(self, varNameTok, startValueNode, endValueNode, stepValueNode, bodyNode):
+    def __init__(self, varNameTok, startValueNode, endValueNode, stepValueNode, bodyNode, shouldReturnNull):
         self.varNameTok = varNameTok
         self.startValueNode = startValueNode
         self.endValueNode = endValueNode
         self.stepValueNode = stepValueNode
         self.bodyNode = bodyNode
+        self.shouldReturnNull = shouldReturnNull
 
         self.startPos = self.varNameTok.startPos
         self.endPos = self.bodyNode.endPos
 
 
 class WhileNode:
-    def __init__(self, conditionNode, bodyNode):
+    def __init__(self, conditionNode, bodyNode, shouldReturnNull):
         self.conditionNode = conditionNode
         self.bodyNode = bodyNode
+        self.shouldReturnNull = shouldReturnNull
 
         self.startPos = self.conditionNode.startPos
         self.endPos = self.bodyNode.endPos
 
 
 class FunDefNode:
-    def __init__(self, varNameTok, argNameTokens, bodyNode):
+    def __init__(self, varNameTok, argNameTokens, bodyNode, shouldReturnNull):
         self.varNameTok = varNameTok
         self.argNameTokens = argNameTokens
         self.bodyNode = bodyNode
+        self.shouldReturnNull = shouldReturnNull
 
         if self.varNameTok:
             self.startPos = self.varNameTok.startPos

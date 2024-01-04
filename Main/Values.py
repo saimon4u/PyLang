@@ -314,10 +314,11 @@ class BaseFunction(Value):
 
 
 class Function(BaseFunction):
-    def __init__(self, name, bodyNode, argNames):
+    def __init__(self, name, bodyNode, argNames, shouldReturnNull):
         super().__init__(name)
         self.bodyNode = bodyNode
         self.argNames = argNames
+        self.shouldReturnNull = shouldReturnNull
 
     def execute(self, args):
         res = Interpreter.RuntimeResult()
@@ -333,10 +334,10 @@ class Function(BaseFunction):
         if res.error:
             return res
 
-        return res.success(value)
+        return res.success(Number(0) if self.shouldReturnNull else value)
 
     def copy(self):
-        copy = Function(self.name, self.bodyNode, self.argNames)
+        copy = Function(self.name, self.bodyNode, self.argNames, self.shouldReturnNull)
         copy.setContext(self.context)
         copy.setPos(self.startPos, self.endPos)
         return copy

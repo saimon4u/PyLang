@@ -52,6 +52,7 @@ def run(filename, text):
     parser = Parser(tokens)
 
     ast = parser.parse()
+
     if ast.error:
         return None, ast.error
 

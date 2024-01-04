@@ -69,6 +69,10 @@ class Lexer:
                 tokens.append(Token(Constant.TT_RSQUARE, startPos=self.position))
                 self.advance()
 
+            elif self.currentChar in ';\n':
+                tokens.append(Token(Constant.TT_NEWLINE, startPos=self.position))
+                self.advance()
+
             elif self.currentChar == '!':
                 tok, error = self.makeNotEquals()
                 if error:
@@ -201,13 +205,13 @@ class Lexer:
         while self.currentChar is not None and (self.currentChar != '"' or escChar):
             if escChar:
                 string += escapeChars.get(self.currentChar, self.currentChar)
+                escChar = False
             else:
                 if self.currentChar == '\\':
                     escChar = True
                 else:
                     string += self.currentChar
             self.advance()
-            escChar = False
 
         self.advance()
         return Token(Constant.TT_STRING, string, pos, self.position)

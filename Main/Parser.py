@@ -5,14 +5,24 @@ from Error import InvalidSyntaxError
 
 class ParseResult:
     def __init__(self):
+        self.toReverseCount = 0
         self.error = None
         self.node = None
         self.advanceCount = 0
+        self.lastRegisteredAdvanceCount = 0
 
     def registerAdvance(self):
+        self.lastRegisteredAdvanceCount = 1
         self.advanceCount += 1
+        
+    def tryRegister(self, res):
+        if res.error:
+            self.toReverseCount = res.advanceCount
+            return None
+        return self.register(res)
 
     def register(self, res):
+        self.lastRegisteredAdvanceCount = res.advanceCount
         self.advanceCount += res.advanceCount
         if res.error:
             self.error = res.error
@@ -23,7 +33,7 @@ class ParseResult:
         return self
 
     def failure(self, error):
-        if not self.error or self.advanceCount == 0:
+        if not self.error or self.lastRegisteredAdvanceCount == 0:
             self.error = error
         return self
 
@@ -37,19 +47,60 @@ class Parser:
 
     def advance(self):
         self.tokIdx += 1
-        if self.tokIdx < len(self.tokens):
-            self.currentTok = self.tokens[self.tokIdx]
-
+        self.updateCurrentToken()
         return self.currentTok
 
+    def reverse(self, amount=1):
+        self.tokIdx -= amount
+        self.updateCurrentToken()
+        return self.currentTok
+
+    def updateCurrentToken(self):
+        if 0 <= self.tokIdx < len(self.tokens):
+            self.currentTok = self.tokens[self.tokIdx]
+
     def parse(self):
-        res = self.expression()
+        res = self.statements()
 
         if not res.error and self.currentTok.tokenType != Constant.TT_EOF:
             return res.failure(InvalidSyntaxError(self.currentTok.startPos, self.currentTok.endPos, "Expected '+', "
                                                                                                     "'-', '*' or '/'"))
 
         return res
+
+    def statements(self):
+        res = ParseResult()
+        statements = []
+        pos = self.currentTok.startPos.copy()
+
+        while self.currentTok.tokenType == Constant.TT_NEWLINE:
+            res.registerAdvance()
+            self.advance()
+
+        statement = res.register(self.expression())
+        if res.error:
+            return res
+        statements.append(statement)
+
+        moreStatements = True
+        while True:
+            newLineCount = 0
+            while self.currentTok.tokenType == Constant.TT_NEWLINE:
+                res.registerAdvance()
+                self.advance()
+                newLineCount += 1
+            if newLineCount == 0:
+                moreStatements = False
+            if not moreStatements:
+                break
+            statement = res.tryRegister(self.expression())
+            if not statement:
+                self.reverse(res.toReverseCount)
+                moreStatements = False
+                continue
+            statements.append(statement)
+
+        return res.success(ListNode(statements, pos, self.currentTok.endPos.copy()))
 
     def atom(self):
         res = ParseResult()
@@ -140,6 +191,7 @@ class Parser:
 
     def expression(self):
         res = ParseResult()
+
         if self.currentTok.matches(Constant.TT_KEYWORD, 'let'):
             res.registerAdvance()
             self.advance()
@@ -197,13 +249,71 @@ class Parser:
 
     def ifExpression(self):
         res = ParseResult()
+        allCases = res.register(self.ifExpressionCases('if'))
+        if res.error:
+            return res
+        cases, elseCase = allCases
+        return res.success(IfNode(cases, elseCase))
+
+    def ifExpressionB(self):
+        return self.ifExpressionCases('elif')
+
+    def ifExpressionC(self):
+        res = ParseResult()
+        elseCase = None
+
+        if self.currentTok.matches(Constant.TT_KEYWORD, 'else'):
+            res.registerAdvance()
+            self.advance()
+
+            if self.currentTok.tokenType == Constant.TT_NEWLINE:
+                res.registerAdvance()
+                self.advance()
+
+                statements = res.register(self.statements())
+                if res.error:
+                    return res
+                elseCase = (statements, True)
+
+                if self.currentTok.matches(Constant.TT_KEYWORD, 'end'):
+                    res.registerAdvance()
+                    self.advance()
+                else:
+                    return res.failure(InvalidSyntaxError(self.currentTok.startPos, self.currentTok.endPos,
+                                                          "Expected 'end'"))
+
+            else:
+                expr = res.register(self.expression())
+                if res.error:
+                    return res
+                elseCase = (expr, False)
+
+        return res.success(elseCase)
+
+    def ifExpressionBorC(self):
+        res = ParseResult()
+        cases, elseCase = [], None
+
+        if self.currentTok.matches(Constant.TT_KEYWORD, 'elif'):
+            allCases = res.register(self.ifExpressionB())
+            if res.error:
+                return res
+            cases, elseCase = allCases
+        else:
+            elseCase = res.register(self.ifExpressionC())
+            if res.error:
+                return res
+
+        return res.success((cases, elseCase))
+
+    def ifExpressionCases(self, caseKeyword):
+        res = ParseResult()
         cases = []
         elseCase = None
 
-        if not self.currentTok.matches(Constant.TT_KEYWORD, 'if'):
+        if not self.currentTok.matches(Constant.TT_KEYWORD, caseKeyword):
             return res.failure(InvalidSyntaxError(self.currentTok.startPos, self.currentTok.endPos,
-                                                  "Expected 'if'"))
-
+                                                  f"Expected '{caseKeyword}'"))
         res.registerAdvance()
         self.advance()
 
@@ -213,44 +323,43 @@ class Parser:
 
         if not self.currentTok.matches(Constant.TT_KEYWORD, 'then'):
             return res.failure(InvalidSyntaxError(self.currentTok.startPos, self.currentTok.endPos,
-                                                  "Expected 'then'"))
+                                                  f"Expected 'then'"))
 
         res.registerAdvance()
         self.advance()
-
-        expr = res.register(self.expression())
-        if res.error:
-            return res
-        cases.append((condition, expr))
-
-        while self.currentTok.matches(Constant.TT_KEYWORD, 'elif'):
+        
+        if self.currentTok.tokenType == Constant.TT_NEWLINE:
             res.registerAdvance()
             self.advance()
 
-            condition = res.register(self.expression())
+            statements = res.register(self.statements())
             if res.error:
                 return res
+            cases.append((condition, statements, True))
 
-            if not self.currentTok.matches(Constant.TT_KEYWORD, 'then'):
-                return res.failure(InvalidSyntaxError(self.currentTok.startPos, self.currentTok.endPos,
-                                                      "Expected 'then'"))
-
-            res.registerAdvance()
-            self.advance()
-
+            if self.currentTok.matches(Constant.TT_KEYWORD, 'end'):
+                res.registerAdvance()
+                self.advance()
+            else:
+                allCases = res.register(self.ifExpressionBorC())
+                if res.error:
+                    return res
+                newCases, elseCase = allCases
+                cases.extend(newCases)
+        else:
             expr = res.register(self.expression())
             if res.error:
                 return res
-            cases.append((condition, expr))
 
-        if self.currentTok.matches(Constant.TT_KEYWORD, 'else'):
-            res.registerAdvance()
-            self.advance()
-            elseCase = res.register(self.expression())
+            cases.append((condition, expr, False))
+            allCases = res.register(self.ifExpressionBorC())
             if res.error:
                 return res
 
-        return res.success(IfNode(cases, elseCase))
+            newCases, elseCase = allCases
+            cases.extend(newCases)
+
+        return res.success((cases, elseCase))
 
     def forExpression(self):
         res = ParseResult()
@@ -306,11 +415,28 @@ class Parser:
         res.registerAdvance()
         self.advance()
 
+        if self.currentTok.tokenType == Constant.TT_NEWLINE:
+            res.registerAdvance()
+            self.advance()
+
+            body = res.register(self.statements())
+            if res.error:
+                return res
+
+            if not self.currentTok.matches(Constant.TT_KEYWORD, 'end'):
+                return res.failure(InvalidSyntaxError(self.currentTok.startPos, self.currentTok.endPos,
+                                                      "Expected 'end'"))
+
+            res.registerAdvance()
+            self.advance()
+
+            return res.success(ForNode(varNameTok, startValue, endValue, stepValue, body, True))
+
         body = res.register(self.expression())
         if res.error:
             return res
 
-        return res.success(ForNode(varNameTok, startValue, endValue, stepValue, body))
+        return res.success(ForNode(varNameTok, startValue, endValue, stepValue, body, False))
 
     def whileExpression(self):
         res = ParseResult()
@@ -331,11 +457,28 @@ class Parser:
         res.registerAdvance()
         self.advance()
 
+        if self.currentTok.tokenType == Constant.TT_NEWLINE:
+            res.registerAdvance()
+            self.advance()
+
+            body = res.register(self.statements())
+            if res.error:
+                return res
+
+            if not self.currentTok.matches(Constant.TT_KEYWORD, 'end'):
+                return res.failure(InvalidSyntaxError(self.currentTok.startPos, self.currentTok.endPos,
+                                                      "Expected 'end'"))
+
+            res.registerAdvance()
+            self.advance()
+
+            return res.success(WhileNode(condition, body, True))
+
         body = res.register(self.expression())
         if res.error:
             return res
 
-        return res.success(WhileNode(condition, body))
+        return res.success(WhileNode(condition, body, False))
 
     def FunDefinition(self):
         res = ParseResult()
@@ -393,18 +536,35 @@ class Parser:
         res.registerAdvance()
         self.advance()
 
-        if self.currentTok.tokenType != Constant.TT_ARROW:
+        if self.currentTok.tokenType == Constant.TT_ARROW:
+            res.registerAdvance()
+            self.advance()
+
+            nodeToReturn = res.register(self.expression())
+            if res.error:
+                return res
+
+            return res.success(FunDefNode(varNameTok, argNameTokens, nodeToReturn, False))
+
+        if self.currentTok.tokenType != Constant.TT_NEWLINE:
             return res.failure(InvalidSyntaxError(self.currentTok.startPos, self.currentTok.endPos,
-                                                  "Expected '->' "))
+                                                  "Expected '->' or NEWLINE"))
 
         res.registerAdvance()
         self.advance()
 
-        nodeToReturn = res.register(self.expression())
+        body = res.register(self.statements())
         if res.error:
             return res
 
-        return res.success(FunDefNode(varNameTok, argNameTokens, nodeToReturn))
+        if not self.currentTok.matches(Constant.TT_KEYWORD, 'end'):
+            return res.failure(InvalidSyntaxError(self.currentTok.startPos, self.currentTok.endPos,
+                                                  "Expected 'end'"))
+
+        res.registerAdvance()
+        self.advance()
+
+        return res.success(FunDefNode(varNameTok, argNameTokens, body, True))
 
     def funCall(self):
         res = ParseResult()

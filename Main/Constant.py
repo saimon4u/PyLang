@@ -29,6 +29,7 @@ TT_ARROW = 'ARROW'
 TT_STRING = 'STRING'
 TT_LSQUARE = 'LSQUARE'
 TT_RSQUARE = 'RSQUARE'
+TT_NEWLINE = 'NEWLINE'
 
 
 KEYWORDS = [
@@ -44,7 +45,8 @@ KEYWORDS = [
     'to',
     'step',
     'while',
-    'fun'
+    'fun',
+    'end'
 ]
 
 BUILTINFUNCTION = [
