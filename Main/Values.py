@@ -471,6 +471,7 @@ class BuiltInFunction(BaseFunction):
 
         listA.elements.extend(listB.elements)
         return res.success(Number(0))
+        # return res.success(Number(0))
     execute_extend.argNames = ['listA', 'listB']
 
     def noExecuteMethod(self, context):
@@ -523,7 +524,7 @@ class BuiltInFunction(BaseFunction):
 
         _, error = Run.run(filename, script)
 
-        if res.error:
+        if error:
             return res.failure(RunningTimeError(self.startPos, self.endPos,
                                                 f"Failed to finish executing script \"{filename}\"\n" +
                                                 error.as_string(), context))

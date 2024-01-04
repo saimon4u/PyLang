@@ -58,16 +58,21 @@ def run(filename, text):
         return None, error
 
     parser = Parser(tokens)
-
+    # print(tokens)
     ast = parser.parse()
 
     if ast.error:
         return None, ast.error
 
     interpreter = Interpreter()
-    context = Context('<PyLang>')
+    context = Context(filename)
     context.symbolTable = table
 
     result = interpreter.visit(ast.node, context)
 
-    return result.value, result.error
+    if result.error:
+        print(result.error.as_string())
+        return None, None
+
+    return result.value, None
+
