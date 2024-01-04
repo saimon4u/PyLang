@@ -1,6 +1,7 @@
 from Constant import Context, SymbolTable
 import Interpreter
 from Error import RunningTimeError
+import Run
 
 
 class Value:
@@ -248,7 +249,8 @@ class List(Value):
     def division(self, other):
         if isinstance(other, Number):
             try:
-                return self.elements[other.value], None
+                val = int(other.value)
+                return self.elements[val], None
             except:
                 return None, RunningTimeError(other.startPos, other.endPos,
                                               "Element at this index could not be retrieved from the list because" +
@@ -473,6 +475,54 @@ class BuiltInFunction(BaseFunction):
 
     def noExecuteMethod(self, context):
         raise Exception("No execute method found!")
+
+    def execute_len(self, context):
+        res = Interpreter.RuntimeResult()
+        mList = context.symbolTable.get('list')
+
+        if not isinstance(mList, List):
+            return res.failure(RunningTimeError(self.startPos, self.endPos,
+                                                "Argument must be a List", context))
+
+        return res.success(Number(len(mList.elements)))
+    execute_len.argNames = ['list']
+
+    def execute_int(self, context):
+        res = Interpreter.RuntimeResult()
+        val = context.symbolTable.get('value')
+
+        if not isinstance(val, Number):
+            return res.failure(RunningTimeError(self.startPos, self.endPos,
+                                                "Argument must be a Number", context))
+
+        return res.success(Number(int(val.value)))
+    execute_int.argNames = ['value']
+
+    def execute_run(self, context):
+        res = Interpreter.RuntimeResult()
+        filename = context.symbolTable.get('fn')
+
+        if not isinstance(filename, String):
+            return res.failure(RunningTimeError(self.startPos, self.endPos,
+                                                "Argument must be a string.", context))
+
+        filename = filename.value
+        try:
+            with open(filename, 'r') as f:
+                script = f.read()
+        except Exception as e:
+            return res.failure(RunningTimeError(self.startPos, self.endPos,
+                                                f"Failed to load script \"{filename}\"\n" + str(e), context))
+
+        _, error = Run.run(filename, script)
+
+        if res.error:
+            return res.failure(RunningTimeError(self.startPos, self.endPos,
+                                                f"Failed to finish executing script \"{filename}\"\n" +
+                                                error.as_string(), context))
+
+        return res.success(Number(0))
+    execute_run.argNames = ['fn']
 
     def copy(self):
         copy = BuiltInFunction(self.name)

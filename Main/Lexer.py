@@ -24,6 +24,9 @@ class Lexer:
             if self.currentChar in ' \t':
                 self.advance()
 
+            elif self.currentChar == '$':
+                self.skipComment()
+
             elif self.currentChar in Constant.DIGITS:
                 tokens.append(self.makeNumber())
 
@@ -215,3 +218,11 @@ class Lexer:
 
         self.advance()
         return Token(Constant.TT_STRING, string, pos, self.position)
+
+    def skipComment(self):
+        self.advance()
+
+        while self.currentChar != '\n':
+            self.advance()
+
+        self.advance()

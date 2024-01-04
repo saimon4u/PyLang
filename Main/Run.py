@@ -22,6 +22,9 @@ BuiltInFunction.isFunction = BuiltInFunction('isFunction')
 BuiltInFunction.push = BuiltInFunction('push')
 BuiltInFunction.pop = BuiltInFunction('pop')
 BuiltInFunction.extend = BuiltInFunction('extend')
+BuiltInFunction.len = BuiltInFunction('len')
+BuiltInFunction.run = BuiltInFunction('run')
+BuiltInFunction.int = BuiltInFunction('int')
 
 
 table = SymbolTable()
@@ -39,6 +42,9 @@ table.set('isFunction', BuiltInFunction.isFunction)
 table.set('push', BuiltInFunction.push)
 table.set('pop', BuiltInFunction.pop)
 table.set('extend', BuiltInFunction.extend)
+table.set('len', BuiltInFunction.len)
+table.set('run', BuiltInFunction.run)
+table.set('int', BuiltInFunction.int)
 
 
 def run(filename, text):
