@@ -249,7 +249,7 @@ class List(Value):
     def division(self, other):
         if isinstance(other, Number):
             try:
-                val = int(other.value)
+                val = other.value
                 return self.elements[val], None
             except:
                 return None, RunningTimeError(other.startPos, other.endPos,
@@ -264,8 +264,8 @@ class List(Value):
         copy.setContext(self.context)
         return copy
 
-    def __str__(self):
-        return ",".join([str(x) for x in self.elements])
+    # def __str__(self):
+    #     return ",".join([str(x) for x in self.elements])
 
     def __repr__(self):
         return f'[{",".join([str(x) for x in self.elements])}]'
@@ -373,9 +373,15 @@ class BuiltInFunction(BaseFunction):
 
     def execute_print(self, context):
         res = Interpreter.RuntimeResult()
-        print(str(context.symbolTable.get('value')))
+        print(str(context.symbolTable.get('value')), end="")
         return res.success(Number(0))
     execute_print.argNames = ['value']
+
+    def execute_println(self, context):
+        res = Interpreter.RuntimeResult()
+        print(str(context.symbolTable.get('value')))
+        return res.success(Number(0))
+    execute_println.argNames = ['value']
 
     def execute_input(self, context):
         res = Interpreter.RuntimeResult()
@@ -396,6 +402,20 @@ class BuiltInFunction(BaseFunction):
 
         return res.success(Number(number))
     execute_inputInt.argNames = []
+
+    def execute_inputFloat(self, context):
+        res = Interpreter.RuntimeResult()
+        text = ''
+        while True:
+            text = input()
+            try:
+                number = float(text)
+                break
+            except ValueError:
+                print(f"'{text}' must be a float. Try again!")
+
+        return res.success(Number(number))
+    execute_inputFloat.argNames = []
 
     def execute_isNumber(self, context):
         res = Interpreter.RuntimeResult()
@@ -456,6 +476,34 @@ class BuiltInFunction(BaseFunction):
         return res.success(element)
     execute_pop.argNames = ['list', 'index']
 
+    def execute_replace(self, context):
+        res = Interpreter.RuntimeResult()
+        mList = context.symbolTable.get('list')
+        index = context.symbolTable.get('index')
+        value = context.symbolTable.get('value')
+
+        if not isinstance(mList, List):
+            return res.failure(RunningTimeError(self.startPos, self.endPos,
+                                                "First argument must be a List", context))
+
+        if not isinstance(index, Number):
+            return res.failure(RunningTimeError(self.startPos, self.endPos,
+                                                "Second argument must be a Number", context))
+
+        try:
+            if isinstance(value, Number):
+                mList.elements[index.value] = Number(value.value)
+            elif isinstance(value, String):
+                mList.elements[index.value] = String(value.value)
+            elif isinstance(value, List):
+                mList.elements[index.value] = List(value.elements)
+        except:
+            return res.failure(RunningTimeError(self.startPos, self.endPos,
+                                                "Element at this index could not be replaced" +
+                                                " because index is out of bounds.", context))
+        return res.success(Number(0))
+    execute_replace.argNames = ['list', 'index', 'value']
+
     def execute_extend(self, context):
         res = Interpreter.RuntimeResult()
         listA = context.symbolTable.get('listA')
@@ -471,7 +519,6 @@ class BuiltInFunction(BaseFunction):
 
         listA.elements.extend(listB.elements)
         return res.success(Number(0))
-        # return res.success(Number(0))
     execute_extend.argNames = ['listA', 'listB']
 
     def noExecuteMethod(self, context):
@@ -498,6 +545,17 @@ class BuiltInFunction(BaseFunction):
 
         return res.success(Number(int(val.value)))
     execute_int.argNames = ['value']
+
+    def execute_float(self, context):
+        res = Interpreter.RuntimeResult()
+        val = context.symbolTable.get('value')
+
+        if not isinstance(val, Number):
+            return res.failure(RunningTimeError(self.startPos, self.endPos,
+                                                "Argument must be a Number", context))
+
+        return res.success(Number(float(val.value)))
+    execute_float.argNames = ['value']
 
     def execute_str(self, context):
         res = Interpreter.RuntimeResult()

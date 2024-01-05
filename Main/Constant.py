@@ -64,7 +64,12 @@ BUILTINFUNCTION = [
     'pop',
     'extend',
     'len',
-    'run'
+    'run',
+    'int',
+    'float',
+    'str',
+    'println',
+    'replace'
 ]
 
 
