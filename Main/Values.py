@@ -336,7 +336,7 @@ class Function(BaseFunction):
         if res.shouldReturn() and res.funReturnValue is None:
             return res
 
-        returnVal = (value if self.shouldAutoReturn else None) or res.funReturnValue or Number(0)
+        returnVal = (value if self.shouldAutoReturn else None) or res.funReturnValue or None
         return res.success(returnVal)
 
     def copy(self):
@@ -374,7 +374,7 @@ class BuiltInFunction(BaseFunction):
     def execute_print(self, context):
         res = Interpreter.RuntimeResult()
         print(str(context.symbolTable.get('value')), end="")
-        return res.success(Number(0))
+        return res.success(None)
     execute_print.argNames = ['value']
 
     def execute_println(self, context):
@@ -576,11 +576,11 @@ class BuiltInFunction(BaseFunction):
         try:
             with open(filename, 'r') as f:
                 script = f.read()
+                f.close()
         except Exception as e:
             return res.failure(RunningTimeError(self.startPos, self.endPos,
                                                 f"Failed to load script \"{filename}\"\n" + str(e), context))
-
-        _, error = Run.run(filename, script)
+        p, error = Run.run(filename, script)
 
         if error:
             return res.failure(RunningTimeError(self.startPos, self.endPos,

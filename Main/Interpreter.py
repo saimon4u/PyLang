@@ -223,7 +223,8 @@ class Interpreter:
             if res.loopShouldBreak:
                 break
             elements.append(value)
-        return res.success(Number(0) if node.shouldReturnNull else List(elements).setContext(context).setPos(node.startPos, node.endPos))
+        # return res.success(Number(0) if node.shouldReturnull else List(elements).setContext(context).setPos(node.startPos, node.endPos))
+        return res.success(None)
 
     def visit_WhileNode(self, node, context):
         res = RuntimeResult()
@@ -247,8 +248,8 @@ class Interpreter:
                 break
             elements.append(value)
 
-        return res.success(Number(0) if node.shouldReturnNull else List(elements).setContext(context).setPos(node.startPos, node.endPos))
-
+        # return res.success(Number(0) if node.shouldReturnNull else List(elements).setContext(context).setPos(node.startPos, node.endPos))
+        return res.success(None)
     def visit_FunDefNode(self, node, context):
         res = RuntimeResult()
         funName = node.varNameTok.value if node.varNameTok else None
@@ -278,7 +279,8 @@ class Interpreter:
         if res.shouldReturn():
             return res
 
-        returnVal = returnVal.copy().setContext(context).setPos(node.startPos, node.endPos)
+        if returnVal:
+            returnVal = returnVal.copy().setContext(context).setPos(node.startPos, node.endPos)
 
         return res.success(returnVal)
 

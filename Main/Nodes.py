@@ -138,6 +138,7 @@ class ContinueNode:
         self.startPos = startPos
         self.endPos = endPos
 
+
 class BreakNode:
     def __init__(self, startPos, endPos):
         self.startPos = startPos

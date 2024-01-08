@@ -1,34 +1,4 @@
-fun search(list, first, last, target)
-    $print(first)
-    $print(last)
-    if first <= last then
-        let mid = int((first+last)/2)
-        if target == (list/mid) then
-            return mid
-        elif target < (list/mid) then
-            return search(list, first, mid-1, target)
-        else
-            return search(list, mid+1, last, target)
-        end
-    end
-    return -1
-end
+let list = [1,2,3,4,4]
 
 
-let list = [1,2,3,4,5,6,7]
-
-print("Enter a number: ")
-
-let value = inputInt()
-
-let index = search(list, 0, len(list)-1, value)
-
-
-if index != -1 then
-    print(str(value) + " found in index " + str(index))
-else
-    print(str(value) + " is not found in the list")
-end
-
-print("This is the list: ")
-print(list)
+print(list-2)

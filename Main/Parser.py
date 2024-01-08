@@ -60,9 +60,11 @@ class Parser:
             self.currentTok = self.tokens[self.tokIdx]
 
     def parse(self):
-        res = self.statements()
+        res = None
+        if len(self.tokens) > 1:
+            res = self.statements()
 
-        if not res.error and self.currentTok.tokenType != Constant.TT_EOF:
+        if res and not res.error and self.currentTok.tokenType != Constant.TT_EOF:
             return res.failure(InvalidSyntaxError(self.currentTok.startPos, self.currentTok.endPos, "Expected '+', "
                                                                                                     "'-', '*' or '/'"))
 

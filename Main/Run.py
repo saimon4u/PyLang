@@ -68,19 +68,20 @@ def run(filename, text):
     parser = Parser(tokens)
     # print(tokens)
     ast = parser.parse()
+    if ast:
+        if ast.error:
+            return None, ast.error
 
-    if ast.error:
-        return None, ast.error
+        interpreter = Interpreter()
+        context = Context(filename)
+        context.symbolTable = table
 
-    interpreter = Interpreter()
-    context = Context(filename)
-    context.symbolTable = table
+        result = interpreter.visit(ast.node, context)
 
-    result = interpreter.visit(ast.node, context)
+        if result.error:
+            print(result.error.as_string())
+            return None, None
 
-    if result.error:
-        print(result.error.as_string())
-        return None, None
-
-    return result.value, None
+        return result.value, None
+    return None, None
 
