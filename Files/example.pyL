@@ -1,4 +1,1 @@
-let list = [1,2,3,4,4]
-
-
-print(list-2)
+println(5%1)
